@@ -45,7 +45,7 @@ public class CueFileWriter
         addHeader("RELEASE DATE", updatedData.ReleaseDate, true);
         addHeader("PERFORMER", updatedData.Artist, false);
         addHeader("TITLE", updatedData.Album, false);
-        addHeader("CATALOG", updatedData.Barcode, false);
+        addHeader("CATALOG", updatedData.Barcode?.Replace(" ", ""), false);
 
         bool headersInjected = false;
 

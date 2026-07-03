@@ -10,6 +10,8 @@ namespace CueComplete.Core;
 
 public class MetadataService
 {
+    public event Action<string>? OnLog;
+
     private readonly Query _mbClient;
     private readonly HttpClient _httpClient;
     private readonly string? _discogsKey;
@@ -30,6 +32,7 @@ public class MetadataService
     private void Log(string message)
     {
         try { System.IO.File.AppendAllText("app.log", $"[{DateTime.Now:O}] {message}\n"); } catch { }
+        OnLog?.Invoke(message);
     }
 
     public async Task<List<CueData>> SearchReleasesAsync(CueData sourceData)

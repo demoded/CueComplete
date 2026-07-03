@@ -159,12 +159,36 @@ public class MainWindow : Window
         
         var dialog = new Dialog("Searching", 50, 10);
         
-        Task.Run(async () => 
+        var progressLabel = new Label("Initializing...")
         {
-            var results = await _metadataService.SearchReleasesAsync(_currentCueData);
-            
+            X = Pos.Center(),
+            Y = Pos.Center()
+        };
+        dialog.Add(progressLabel);
+
+        Action<string> onLogHandler = (msg) => 
+        {
             Application.MainLoop.Invoke(() => 
             {
+                progressLabel.Text = msg.Length > 45 ? msg.Substring(0, 42) + "..." : msg;
+                progressLabel.SetNeedsDisplay();
+            });
+        };
+
+        _metadataService.OnLog += onLogHandler;
+        
+        Task.Run(async () => 
+        {
+            List<CueData> results = new();
+            try
+            {
+                results = await _metadataService.SearchReleasesAsync(_currentCueData);
+            }
+            finally
+            {
+                Application.MainLoop.Invoke(() => 
+                {
+                    _metadataService.OnLog -= onLogHandler;
                 _searchResults = results;
                 var displayList = _searchResults.Select(r => 
                 {
@@ -186,6 +210,7 @@ public class MainWindow : Window
                     _resultsListView.SetFocus();
                 }
             });
+            }
         });
 
         Application.Run(dialog);
