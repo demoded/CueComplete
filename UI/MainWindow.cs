@@ -39,6 +39,8 @@ public class MainWindow : Window
             AllowsMarking = false
         };
         _fileListView.OpenSelectedItem += FileListView_OpenSelectedItem;
+        _fileListView.SelectedItemChanged += (e) => { if (_fileListView.HasFocus) UpdateFilePreview(); };
+        _fileListView.Enter += (e) => UpdateFilePreview();
         leftPane.Add(_fileListView);
 
         var rightPaneTop = new FrameView("Current Details")
@@ -76,6 +78,8 @@ public class MainWindow : Window
             Height = Dim.Fill()
         };
         _resultsListView.OpenSelectedItem += ResultsListView_OpenSelectedItem;
+        _resultsListView.SelectedItemChanged += (e) => { if (_resultsListView.HasFocus) UpdateResultPreview(); };
+        _resultsListView.Enter += (e) => UpdateResultPreview();
         rightPaneBottom.Add(_resultsListView);
 
         var statusBar = new StatusBar(new StatusItem[] {
@@ -98,20 +102,47 @@ public class MainWindow : Window
         }
     }
 
+    private void UpdateDetailsView(string title, CueData data)
+    {
+        _detailsTextView.Text = $"{title}\n\n" +
+            $"Artist: {data.Artist}\n" +
+            $"Album: {data.Album}\n" +
+            $"Genre: {data.Genre}\n" +
+            $"Date: {data.Date}\n" +
+            $"Label: {data.Label}\n" +
+            $"Cat No: {data.CatalogNumber}\n" +
+            $"Country: {data.Country}\n" +
+            $"Barcode: {data.Barcode}\n" +
+            $"Rel Date: {data.ReleaseDate}";
+    }
+
+    private void UpdateFilePreview()
+    {
+        if (_fileListView.SelectedItem >= 0 && _fileListView.SelectedItem < _cueFiles.Count)
+        {
+            var filePath = _cueFiles[_fileListView.SelectedItem];
+            try {
+                var previewData = CueFileParser.Parse(filePath);
+                UpdateDetailsView($"File: {Path.GetFileName(filePath)}", previewData);
+            } catch {}
+        }
+    }
+
+    private void UpdateResultPreview()
+    {
+        if (_searchResults != null && _resultsListView.SelectedItem >= 0 && _resultsListView.SelectedItem < _searchResults.Count)
+        {
+            var data = _searchResults[_resultsListView.SelectedItem];
+            UpdateDetailsView("Search Result Preview:", data);
+        }
+    }
+
     private void LoadCueFile(string filePath)
     {
         _currentCueData = CueFileParser.Parse(filePath);
         
-        _detailsTextView.Text = $"File: {Path.GetFileName(filePath)}\n\n" +
-            $"Artist: {_currentCueData.Artist}\n" +
-            $"Album: {_currentCueData.Album}\n" +
-            $"Genre: {_currentCueData.Genre}\n" +
-            $"Date: {_currentCueData.Date}\n" +
-            $"Label: {_currentCueData.Label}\n" +
-            $"Cat No: {_currentCueData.CatalogNumber}\n" +
-            $"Country: {_currentCueData.Country}\n" +
-            $"Barcode: {_currentCueData.Barcode}\n" +
-            $"Rel Date: {_currentCueData.ReleaseDate}";
+        UpdateDetailsView($"File: {Path.GetFileName(filePath)}", _currentCueData);
+            
             
         _searchResults.Clear();
         _resultsListView.SetSource(_searchResults);
