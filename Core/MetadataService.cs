@@ -36,12 +36,13 @@ public class MetadataService
     {
         Log($"Starting search for: Artist='{sourceData.Artist}', Album='{sourceData.Album}', Barcode='{sourceData.Barcode}'");
         var results = new List<CueData>();
+        var mbResults = new List<CueData>();
         
         // 1. MusicBrainz Search
         try
         {
             Log("Querying MusicBrainz...");
-            var mbResults = await SearchMusicBrainzAsync(sourceData);
+            mbResults = await SearchMusicBrainzAsync(sourceData);
             Log($"MusicBrainz returned {mbResults.Count} results.");
             results.AddRange(mbResults);
             
@@ -68,7 +69,7 @@ public class MetadataService
             try
             {
                 Log("Querying Discogs...");
-                var discogsResults = await SearchDiscogsAsync(sourceData);
+                var discogsResults = await SearchDiscogsAsync(sourceData, mbResults);
                 Log($"Discogs returned {discogsResults.Count} results.");
                 results.AddRange(discogsResults);
             }
@@ -395,25 +396,48 @@ public class MetadataService
         }
     }
 
-    private async Task<List<CueData>> SearchDiscogsAsync(CueData sourceData)
+    private async Task<List<CueData>> SearchDiscogsAsync(CueData sourceData, List<CueData> mbResults)
     {
         var list = new List<CueData>();
         
-        if (!string.IsNullOrWhiteSpace(sourceData.DiscogsId))
+        var discogsIds = mbResults.Where(r => !string.IsNullOrWhiteSpace(r.DiscogsId)).Select(r => r.DiscogsId!).Distinct().Take(10).ToList();
+        var barcodes = mbResults.Where(r => !string.IsNullOrWhiteSpace(r.Barcode)).Select(r => r.Barcode!).Distinct().Take(10).ToList();
+        
+        if (!string.IsNullOrWhiteSpace(sourceData.DiscogsId) && !discogsIds.Contains(sourceData.DiscogsId))
+            discogsIds.Insert(0, sourceData.DiscogsId);
+            
+        if (!string.IsNullOrWhiteSpace(sourceData.Barcode) && !barcodes.Contains(sourceData.Barcode))
+            barcodes.Insert(0, sourceData.Barcode);
+            
+        // 1. Fetch exact releases by DiscogsId
+        foreach (var id in discogsIds)
         {
-            var data = new CueData { Source = "[DC]", DiscogsId = sourceData.DiscogsId };
-            await FetchAndApplyDiscogsDataAsync(data, $"https://api.discogs.com/releases/{sourceData.DiscogsId}", true);
+            var data = new CueData { Source = "[DC]", DiscogsId = id };
+            await FetchAndApplyDiscogsDataAsync(data, $"https://api.discogs.com/releases/{id}", true);
             if (!string.IsNullOrEmpty(data.Album))
             {
                 list.Add(data);
-                return list;
             }
         }
         
-        string query = $"{sourceData.Artist} {sourceData.Album}";
-        if (!string.IsNullOrWhiteSpace(sourceData.Barcode))
-            query = sourceData.Barcode;
+        // 2. Fetch by Barcodes
+        foreach (var barcode in barcodes)
+        {
+            await PerformDiscogsTextSearchAsync(barcode, sourceData, list);
+        }
+        
+        // 3. Fallback to Text Search if nothing was found
+        if (discogsIds.Count == 0 && barcodes.Count == 0)
+        {
+            string query = $"{sourceData.Artist} {sourceData.Album}";
+            await PerformDiscogsTextSearchAsync(query, sourceData, list);
+        }
 
+        return list;
+    }
+    
+    private async Task PerformDiscogsTextSearchAsync(string query, CueData sourceData, List<CueData> list)
+    {
         var url = $"https://api.discogs.com/database/search?q={HttpUtility.UrlEncode(query)}&type=release";
         Log($"Discogs query URL: {url}");
         
@@ -432,7 +456,7 @@ public class MetadataService
         if (!response.IsSuccessStatusCode)
         {
             Log($"Discogs HTTP request failed with status: {response.StatusCode}");
-            return list;
+            return;
         }
 
         var json = await response.Content.ReadAsStringAsync();
@@ -449,8 +473,8 @@ public class MetadataService
                 Album = item.GetProperty("title").GetString(), 
             };
             
-            if (item.TryGetProperty("barcode", out var barcodes) && barcodes.ValueKind == JsonValueKind.Array && barcodes.GetArrayLength() > 0)
-                data.Barcode = barcodes[0].GetString();
+            if (item.TryGetProperty("barcode", out var dbBarcodes) && dbBarcodes.ValueKind == JsonValueKind.Array && dbBarcodes.GetArrayLength() > 0)
+                data.Barcode = dbBarcodes[0].GetString();
             
             if (item.TryGetProperty("year", out var year))
                 data.Date = year.GetString();
@@ -479,8 +503,6 @@ public class MetadataService
 
             list.Add(data);
         }
-
-        return list;
     }
 
     private static string? CleanDiscogsString(string? input)
