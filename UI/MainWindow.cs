@@ -130,7 +130,8 @@ public class MainWindow : Window
             var filePath = _cueFiles[_fileListView.SelectedItem];
             try {
                 var previewData = CueFileParser.Parse(filePath);
-                UpdateDetailsView($"File: {Path.GetFileName(filePath)}", previewData);
+                var folderName = Path.GetFileName(Path.GetDirectoryName(filePath));
+                UpdateDetailsView($"File: {folderName}\\{Path.GetFileName(filePath)}", previewData);
             } catch {}
         }
     }
@@ -149,7 +150,8 @@ public class MainWindow : Window
         _fileListView.SetFocus();
         _currentCueData = CueFileParser.Parse(filePath);
         
-        UpdateDetailsView($"File: {Path.GetFileName(filePath)}", _currentCueData);
+        var folderName = Path.GetFileName(Path.GetDirectoryName(filePath));
+        UpdateDetailsView($"File: {folderName}\\{Path.GetFileName(filePath)}", _currentCueData);
             
             
         _searchResults.Clear();
