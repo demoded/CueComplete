@@ -30,7 +30,12 @@ public class MainWindow : Window
             Height = Dim.Fill()
         };
 
-        _fileListView = new ListView(_cueFiles)
+        var displayFiles = _cueFiles.Select(f => {
+            var dir = Path.GetDirectoryName(f);
+            return string.IsNullOrEmpty(dir) ? Path.GetFileName(f) : Path.GetFileName(dir);
+        }).ToList();
+
+        _fileListView = new ListView(displayFiles)
         {
             X = 0,
             Y = 0,
@@ -96,9 +101,9 @@ public class MainWindow : Window
 
     private void FileListView_OpenSelectedItem(ListViewItemEventArgs obj)
     {
-        if (obj.Value is string filePath)
+        if (obj.Item >= 0 && obj.Item < _cueFiles.Count)
         {
-            LoadCueFile(filePath);
+            LoadCueFile(_cueFiles[obj.Item]);
         }
     }
 

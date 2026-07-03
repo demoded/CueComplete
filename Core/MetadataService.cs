@@ -44,6 +44,16 @@ public class MetadataService
             var mbResults = await SearchMusicBrainzAsync(sourceData);
             Log($"MusicBrainz returned {mbResults.Count} results.");
             results.AddRange(mbResults);
+            
+            var bestMb = mbResults.FirstOrDefault(r => !string.IsNullOrEmpty(r.DiscogsId)) ?? 
+                         mbResults.FirstOrDefault(r => !string.IsNullOrEmpty(r.Barcode));
+            if (bestMb != null)
+            {
+                if (!string.IsNullOrEmpty(bestMb.DiscogsId))
+                    sourceData.DiscogsId = bestMb.DiscogsId;
+                if (!string.IsNullOrEmpty(bestMb.Barcode) && string.IsNullOrEmpty(sourceData.Barcode))
+                    sourceData.Barcode = bestMb.Barcode;
+            }
         }
         catch (Exception ex)
         {
@@ -157,6 +167,7 @@ public class MetadataService
 
                     if (!string.IsNullOrWhiteSpace(discogsReleaseId))
                     {
+                        data.DiscogsId = discogsReleaseId;
                         Log($"Found Discogs link in MusicBrainz: {discogsReleaseId}");
                         await EnrichWithDiscogsReleaseIdAsync(data, discogsReleaseId);
                     }
@@ -257,6 +268,7 @@ public class MetadataService
 
             if (!string.IsNullOrWhiteSpace(discogsReleaseId))
             {
+                data.DiscogsId = discogsReleaseId;
                 Log($"Found Discogs link in MusicBrainz: {discogsReleaseId}");
                 await EnrichWithDiscogsReleaseIdAsync(data, discogsReleaseId);
             }
@@ -327,6 +339,37 @@ public class MetadataService
                 data.Date = year.GetString() ?? data.Date;
             }
             
+            if (isDirectReleaseUrl)
+            {
+                if (string.IsNullOrEmpty(data.Artist) && item.TryGetProperty("artists", out var artists) && artists.ValueKind == JsonValueKind.Array && artists.GetArrayLength() > 0)
+                    data.Artist = CleanDiscogsString(artists[0].GetProperty("name").GetString());
+                    
+                if (string.IsNullOrEmpty(data.Album) && item.TryGetProperty("title", out var title))
+                    data.Album = title.GetString();
+                    
+                if (string.IsNullOrEmpty(data.Label) && item.TryGetProperty("labels", out var labels) && labels.ValueKind == JsonValueKind.Array && labels.GetArrayLength() > 0)
+                {
+                    data.Label = CleanDiscogsString(labels[0].GetProperty("name").GetString());
+                    if (labels[0].TryGetProperty("catno", out var catno))
+                        data.CatalogNumber = catno.GetString();
+                }
+                
+                if (string.IsNullOrEmpty(data.Country) && item.TryGetProperty("country", out var country))
+                    data.Country = country.GetString();
+                    
+                if (string.IsNullOrEmpty(data.Barcode) && item.TryGetProperty("identifiers", out var idents) && idents.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var ident in idents.EnumerateArray())
+                    {
+                        if (ident.TryGetProperty("type", out var t) && t.GetString() == "Barcode")
+                        {
+                            data.Barcode = ident.GetProperty("value").GetString();
+                            break;
+                        }
+                    }
+                }
+            }
+            
             if (item.TryGetProperty("genre", out var genres) && genres.ValueKind == JsonValueKind.Array && genres.GetArrayLength() > 0)
                 data.Genre = data.Genre ?? genres[0].GetString();
 
@@ -355,6 +398,17 @@ public class MetadataService
     private async Task<List<CueData>> SearchDiscogsAsync(CueData sourceData)
     {
         var list = new List<CueData>();
+        
+        if (!string.IsNullOrWhiteSpace(sourceData.DiscogsId))
+        {
+            var data = new CueData { Source = "[DC]", DiscogsId = sourceData.DiscogsId };
+            await FetchAndApplyDiscogsDataAsync(data, $"https://api.discogs.com/releases/{sourceData.DiscogsId}", true);
+            if (!string.IsNullOrEmpty(data.Album))
+            {
+                list.Add(data);
+                return list;
+            }
+        }
         
         string query = $"{sourceData.Artist} {sourceData.Album}";
         if (!string.IsNullOrWhiteSpace(sourceData.Barcode))
