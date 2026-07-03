@@ -42,7 +42,7 @@ public class CueFileWriter
         addHeader("LABEL", updatedData.Label, true);
         addHeader("CATALOGNUMBER", updatedData.CatalogNumber, true);
         addHeader("COUNTRY", updatedData.Country, true);
-        addHeader("RELEASE DATE", updatedData.ReleaseDate, true);
+        addHeader("RELEASEDATE", updatedData.ReleaseDate, true);
         addHeader("PERFORMER", updatedData.Artist, false);
         addHeader("TITLE", updatedData.Album, false);
         addHeader("CATALOG", updatedData.Barcode?.Replace(" ", ""), false);
@@ -80,7 +80,7 @@ public class CueFileWriter
 
                 if (CheckSkip("GENRE", true) || CheckSkip("DATE", true) || 
                     CheckSkip("LABEL", true) || CheckSkip("CATALOGNUMBER", true) || CheckSkip("CATALOG NUMBER", true) || 
-                    CheckSkip("COUNTRY", true) || CheckSkip("RELEASE DATE", true) ||
+                    CheckSkip("COUNTRY", true) || CheckSkip("RELEASEDATE", true) || CheckSkip("RELEASE DATE", true) ||
                     CheckSkip("PERFORMER", false) || CheckSkip("TITLE", false) || 
                     CheckSkip("CATALOG", false))
                 {

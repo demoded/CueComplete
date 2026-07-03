@@ -40,7 +40,7 @@ public class CueFileParser
                     data.Label = ExtractRemValue(trimmedLine, "LABEL") ?? data.Label;
                     data.CatalogNumber = ExtractRemValue(trimmedLine, "CATALOGNUMBER") ?? ExtractRemValue(trimmedLine, "CATALOG NUMBER") ?? data.CatalogNumber;
                     data.Country = ExtractRemValue(trimmedLine, "COUNTRY") ?? data.Country;
-                    data.ReleaseDate = ExtractRemValue(trimmedLine, "RELEASE DATE") ?? data.ReleaseDate;
+                    data.ReleaseDate = ExtractRemValue(trimmedLine, "RELEASEDATE") ?? ExtractRemValue(trimmedLine, "RELEASE DATE") ?? data.ReleaseDate;
                     data.DiscId = ExtractRemValue(trimmedLine, "DISCID") ?? data.DiscId;
                 }
             }

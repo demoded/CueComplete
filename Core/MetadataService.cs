@@ -352,11 +352,11 @@ public class MetadataService
             if (isDirectReleaseUrl && item.TryGetProperty("released", out var released))
             {
                 data.ReleaseDate = released.GetString() ?? data.ReleaseDate;
-                data.Date = released.GetString() ?? data.Date;
             }
-            else if (!isDirectReleaseUrl && item.TryGetProperty("year", out var year))
+            
+            if (item.TryGetProperty("year", out var year))
             {
-                data.Date = year.GetString() ?? data.Date;
+                data.Date = year.ToString();
             }
             
             if (isDirectReleaseUrl)
@@ -483,6 +483,8 @@ public class MetadataService
         using var doc = JsonDocument.Parse(json);
         
         var resultsArray = doc.RootElement.GetProperty("results");
+        var tasks = new List<Task>();
+        
         foreach (var item in resultsArray.EnumerateArray().Take(5))
         {
             var data = new CueData
@@ -523,8 +525,15 @@ public class MetadataService
                 }
             }
 
+            if (item.TryGetProperty("resource_url", out var resourceUrl))
+            {
+                tasks.Add(FetchAndApplyDiscogsDataAsync(data, resourceUrl.GetString(), true));
+            }
+
             list.Add(data);
         }
+        
+        await Task.WhenAll(tasks);
     }
 
     private static string? CleanDiscogsString(string? input)
