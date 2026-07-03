@@ -113,7 +113,9 @@ public class MainWindow : Window
             $"Cat No: {data.CatalogNumber}\n" +
             $"Country: {data.Country}\n" +
             $"Barcode: {data.Barcode}\n" +
-            $"Rel Date: {data.ReleaseDate}";
+            $"Rel Date: {data.ReleaseDate}\n" +
+            $"Discs: {data.Discs}\n" +
+            $"Tracks: {data.Tracks}";
     }
 
     private void UpdateFilePreview()
@@ -158,8 +160,16 @@ public class MainWindow : Window
             {
                 _searchResults = results;
                 var displayList = _searchResults.Select(r => 
-                    $"{r.Source} {r.Artist} - {r.Album} [{r.Date}] [{r.CatalogNumber}] [{r.Barcode}]"
-                ).ToList();
+                {
+                    string extra = "";
+                    if (r.Discs.HasValue || r.Tracks.HasValue)
+                    {
+                        var d = r.Discs.HasValue ? $"{r.Discs}xCD" : "";
+                        var t = r.Tracks.HasValue ? $"{r.Tracks} Tracks" : "";
+                        extra = " - " + string.Join(", ", new[] { d, t }.Where(s => !string.IsNullOrEmpty(s)));
+                    }
+                    return $"{r.Source} {r.Artist} - {r.Album} [{r.Date}] [{r.CatalogNumber}] [{r.Barcode}]{extra}";
+                }).ToList();
                 
                 _resultsListView.SetSource(displayList);
                 Application.RequestStop(dialog);

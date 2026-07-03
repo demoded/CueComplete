@@ -112,7 +112,7 @@ public class MetadataService
                 Log($"Found MusicBrainz Release ID via FreeDB: {releaseId}");
                 try
                 {
-                    var release = await _mbClient.LookupReleaseAsync(Guid.Parse(releaseId), Include.Labels | Include.Genres | Include.UrlRelationships);
+                    var release = await _mbClient.LookupReleaseAsync(Guid.Parse(releaseId), Include.Labels | Include.Genres | Include.UrlRelationships | Include.Recordings);
                     var data = new CueData
                     {
                         Source = "[MB]",
@@ -121,7 +121,9 @@ public class MetadataService
                         Barcode = release.Barcode,
                         Date = release.Date?.ToString(),
                         ReleaseDate = release.Date?.ToString(),
-                        Country = release.Country
+                        Country = release.Country,
+                        Discs = release.Media?.Count,
+                        Tracks = release.Media?.Sum(m => m.TrackCount)
                     };
                     
                     if (release.LabelInfo != null && release.LabelInfo.Count > 0)
@@ -208,7 +210,7 @@ public class MetadataService
             
             // Try to get detailed release for more info (like labels/genres and url relations)
             try {
-                release = await _mbClient.LookupReleaseAsync(release.Id, Include.Labels | Include.Genres | Include.UrlRelationships);
+                release = await _mbClient.LookupReleaseAsync(release.Id, Include.Labels | Include.Genres | Include.UrlRelationships | Include.Recordings);
             } catch { /* Ignore lookup failure */ }
 
             var data = new CueData
@@ -219,7 +221,9 @@ public class MetadataService
                 Barcode = release.Barcode,
                 Date = release.Date?.ToString(),
                 ReleaseDate = release.Date?.ToString(),
-                Country = release.Country
+                Country = release.Country,
+                Discs = release.Media?.Count,
+                Tracks = release.Media?.Sum(m => m.TrackCount)
             };
             
             if (release.LabelInfo != null && release.LabelInfo.Count > 0)
@@ -325,6 +329,22 @@ public class MetadataService
             
             if (item.TryGetProperty("genre", out var genres) && genres.ValueKind == JsonValueKind.Array && genres.GetArrayLength() > 0)
                 data.Genre = data.Genre ?? genres[0].GetString();
+
+            if (isDirectReleaseUrl && item.TryGetProperty("tracklist", out var tracklist) && tracklist.ValueKind == JsonValueKind.Array)
+            {
+                data.Tracks = tracklist.GetArrayLength();
+            }
+
+            if (isDirectReleaseUrl && item.TryGetProperty("formats", out var formats) && formats.ValueKind == JsonValueKind.Array)
+            {
+                int discs = 0;
+                foreach (var format in formats.EnumerateArray())
+                {
+                    if (format.TryGetProperty("qty", out var qtyStr) && int.TryParse(qtyStr.GetString(), out int q))
+                        discs += q;
+                }
+                if (discs > 0) data.Discs = discs;
+            }
         }
         catch (Exception ex)
         {
@@ -390,6 +410,9 @@ public class MetadataService
             if (item.TryGetProperty("genre", out var genres) && genres.ValueKind == JsonValueKind.Array && genres.GetArrayLength() > 0)
                 data.Genre = genres[0].GetString();
             
+            if (item.TryGetProperty("format_quantity", out var qty) && qty.ValueKind == JsonValueKind.Number)
+                data.Discs = qty.GetInt32();
+
             if (data.Album != null && data.Album.Contains(" - "))
             {
                 var parts = data.Album.Split(new[] { " - " }, 2, StringSplitOptions.None);
