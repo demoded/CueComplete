@@ -158,7 +158,7 @@ public class MainWindow : Window
             {
                 _searchResults = results;
                 var displayList = _searchResults.Select(r => 
-                    $"{r.Artist} - {r.Album} [{r.Date}] [{r.CatalogNumber}] [{r.Barcode}]"
+                    $"{r.Source} {r.Artist} - {r.Album} [{r.Date}] [{r.CatalogNumber}] [{r.Barcode}]"
                 ).ToList();
                 
                 _resultsListView.SetSource(displayList);

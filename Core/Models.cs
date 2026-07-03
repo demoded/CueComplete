@@ -12,5 +12,6 @@ public class CueData
     public string? Barcode { get; set; }
     public string? ReleaseDate { get; set; }
     public string? DiscId { get; set; }
+    public string? Source { get; set; }
     public List<string> OriginalLines { get; set; } = new();
 }

@@ -115,6 +115,7 @@ public class MetadataService
                     var release = await _mbClient.LookupReleaseAsync(Guid.Parse(releaseId), Include.Labels | Include.Genres | Include.UrlRelationships);
                     var data = new CueData
                     {
+                        Source = "[MB]",
                         Artist = release.ArtistCredit?.FirstOrDefault()?.Name ?? sourceData.Artist,
                         Album = release.Title,
                         Barcode = release.Barcode,
@@ -212,6 +213,7 @@ public class MetadataService
 
             var data = new CueData
             {
+                Source = "[MB]",
                 Artist = release.ArtistCredit?.FirstOrDefault()?.Name ?? sourceData.Artist,
                 Album = release.Title,
                 Barcode = release.Barcode,
@@ -368,6 +370,7 @@ public class MetadataService
         {
             var data = new CueData
             {
+                Source = "[DC]",
                 Artist = sourceData.Artist, 
                 Album = item.GetProperty("title").GetString(), 
             };
