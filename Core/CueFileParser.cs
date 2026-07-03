@@ -46,7 +46,39 @@ public class CueFileParser
             }
         }
 
+        if (string.IsNullOrWhiteSpace(data.CatalogNumber))
+        {
+            var folderName = Path.GetFileName(Path.GetDirectoryName(filePath));
+            if (!string.IsNullOrWhiteSpace(folderName))
+            {
+                data.CatalogNumber = ExtractCatalogNumberFromFolderName(folderName);
+            }
+        }
+
         return data;
+    }
+
+    private static string? ExtractCatalogNumberFromFolderName(string folderName)
+    {
+        var match = Regex.Match(folderName, @"\[([^\]]+)\][^\[\]]*$");
+        if (!match.Success) return null;
+
+        var content = match.Groups[1].Value;
+        var parts = content.Split(',').Select(p => p.Trim()).ToList();
+
+        parts.RemoveAll(p => Regex.IsMatch(p, @"^\d{4}$"));
+        parts.RemoveAll(p => Regex.IsMatch(p, @"^\d+CD$", RegexOptions.IgnoreCase));
+        parts.RemoveAll(p => Regex.IsMatch(p, @"^[A-Z]{2,3}$"));
+
+        if (parts.Count == 0) return null;
+
+        var withDigits = parts.Where(p => Regex.IsMatch(p, @"\d")).ToList();
+        if (withDigits.Count > 0)
+        {
+            return withDigits.Last();
+        }
+
+        return parts.Last();
     }
 
     private static string? ExtractValue(string line, string key)

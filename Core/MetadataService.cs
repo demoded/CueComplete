@@ -41,6 +41,21 @@ public class MetadataService
         var results = new List<CueData>();
         var mbResults = new List<CueData>();
         
+        // 0. Prioritized Discogs Catalog Number Search
+        if (!string.IsNullOrWhiteSpace(sourceData.CatalogNumber) && 
+           (!string.IsNullOrWhiteSpace(_discogsToken) || (!string.IsNullOrWhiteSpace(_discogsKey) && !string.IsNullOrWhiteSpace(_discogsSecret))))
+        {
+            try
+            {
+                Log($"Prioritized Discogs search for Catalog Number: {sourceData.CatalogNumber}");
+                await PerformDiscogsTextSearchAsync(sourceData.CatalogNumber, sourceData, results);
+            }
+            catch (Exception ex)
+            {
+                Log($"Priority Discogs Error: {ex.Message}");
+            }
+        }
+        
         // 1. MusicBrainz Search
         try
         {
@@ -431,7 +446,7 @@ public class MetadataService
         }
         
         // 3. Fallback to Text Search if nothing was found
-        if (discogsIds.Count == 0 && barcodes.Count == 0)
+        if (discogsIds.Count == 0 && barcodes.Count == 0 && list.Count == 0 && string.IsNullOrWhiteSpace(sourceData.CatalogNumber))
         {
             string query = $"{sourceData.Artist} {sourceData.Album}";
             await PerformDiscogsTextSearchAsync(query, sourceData, list);
