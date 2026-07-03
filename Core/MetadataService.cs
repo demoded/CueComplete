@@ -390,8 +390,13 @@ public class MetadataService
                 }
             }
             
-            if (item.TryGetProperty("genre", out var genres) && genres.ValueKind == JsonValueKind.Array && genres.GetArrayLength() > 0)
-                data.Genre = data.Genre ?? genres[0].GetString();
+            string? genreValue = null;
+            if (item.TryGetProperty("style", out var styles) && styles.ValueKind == JsonValueKind.Array && styles.GetArrayLength() > 0)
+                genreValue = styles[0].GetString();
+            if (string.IsNullOrWhiteSpace(genreValue) && item.TryGetProperty("genre", out var genres) && genres.ValueKind == JsonValueKind.Array && genres.GetArrayLength() > 0)
+                genreValue = genres[0].GetString();
+            if (!string.IsNullOrWhiteSpace(genreValue))
+                data.Genre = data.Genre ?? genreValue;
 
             if (isDirectReleaseUrl && item.TryGetProperty("tracklist", out var tracklist) && tracklist.ValueKind == JsonValueKind.Array)
             {
@@ -509,8 +514,13 @@ public class MetadataService
             if (item.TryGetProperty("label", out var labels) && labels.ValueKind == JsonValueKind.Array && labels.GetArrayLength() > 0)
                 data.Label = CleanDiscogsString(labels[0].GetString());
                 
-            if (item.TryGetProperty("genre", out var genres) && genres.ValueKind == JsonValueKind.Array && genres.GetArrayLength() > 0)
-                data.Genre = genres[0].GetString();
+            string? searchGenreValue = null;
+            if (item.TryGetProperty("style", out var searchStyles) && searchStyles.ValueKind == JsonValueKind.Array && searchStyles.GetArrayLength() > 0)
+                searchGenreValue = searchStyles[0].GetString();
+            if (string.IsNullOrWhiteSpace(searchGenreValue) && item.TryGetProperty("genre", out var searchGenres) && searchGenres.ValueKind == JsonValueKind.Array && searchGenres.GetArrayLength() > 0)
+                searchGenreValue = searchGenres[0].GetString();
+            if (!string.IsNullOrWhiteSpace(searchGenreValue))
+                data.Genre = searchGenreValue;
             
             if (item.TryGetProperty("format_quantity", out var qty) && qty.ValueKind == JsonValueKind.Number)
                 data.Discs = qty.GetInt32();
