@@ -90,7 +90,7 @@ public class MainWindow : Window
 
         if (_cueFiles.Count > 0)
         {
-            LoadCueFile(_cueFiles[0]);
+            UpdateFilePreview();
         }
     }
 
@@ -139,6 +139,7 @@ public class MainWindow : Window
 
     private void LoadCueFile(string filePath)
     {
+        _fileListView.SetFocus();
         _currentCueData = CueFileParser.Parse(filePath);
         
         UpdateDetailsView($"File: {Path.GetFileName(filePath)}", _currentCueData);
@@ -162,6 +163,11 @@ public class MainWindow : Window
                 
                 _resultsListView.SetSource(displayList);
                 Application.RequestStop(dialog);
+
+                if (_searchResults.Count > 0)
+                {
+                    _resultsListView.SetFocus();
+                }
             });
         });
 
