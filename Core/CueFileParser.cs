@@ -38,7 +38,7 @@ public class CueFileParser
                     data.Genre = ExtractRemValue(trimmedLine, "GENRE") ?? data.Genre;
                     data.Date = ExtractRemValue(trimmedLine, "DATE") ?? data.Date;
                     data.Label = ExtractRemValue(trimmedLine, "LABEL") ?? data.Label;
-                    data.CatalogNumber = ExtractRemValue(trimmedLine, "CATALOG NUMBER") ?? data.CatalogNumber;
+                    data.CatalogNumber = ExtractRemValue(trimmedLine, "CATALOGNUMBER") ?? ExtractRemValue(trimmedLine, "CATALOG NUMBER") ?? data.CatalogNumber;
                     data.Country = ExtractRemValue(trimmedLine, "COUNTRY") ?? data.Country;
                     data.ReleaseDate = ExtractRemValue(trimmedLine, "RELEASE DATE") ?? data.ReleaseDate;
                     data.DiscId = ExtractRemValue(trimmedLine, "DISCID") ?? data.DiscId;

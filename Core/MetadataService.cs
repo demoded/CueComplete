@@ -495,6 +495,9 @@ public class MetadataService
             if (item.TryGetProperty("barcode", out var dbBarcodes) && dbBarcodes.ValueKind == JsonValueKind.Array && dbBarcodes.GetArrayLength() > 0)
                 data.Barcode = dbBarcodes[0].GetString();
             
+            if (item.TryGetProperty("catno", out var catno))
+                data.CatalogNumber = catno.GetString();
+            
             if (item.TryGetProperty("year", out var year))
                 data.Date = year.GetString();
                 
