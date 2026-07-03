@@ -87,27 +87,28 @@ public class MetadataService
         return results;
     }
 
-    private async Task<string?> GetMusicBrainzReleaseIdFromFreeDbAsync(string freeDbId)
+    private async Task<List<string>> GetMusicBrainzReleaseIdsFromFreeDbAsync(string freeDbId)
     {
+        var ids = new List<string>();
         try
         {
             var url = $"https://musicbrainz.org/otherlookup/freedbid?other-lookup.freedbid={freeDbId}";
             var request = new HttpRequestMessage(HttpMethod.Get, url);
             var response = await _httpClient.SendAsync(request);
-            if (!response.IsSuccessStatusCode) return null;
+            if (!response.IsSuccessStatusCode) return ids;
             
             var html = await response.Content.ReadAsStringAsync();
-            var match = Regex.Match(html, @"href=""/release/([a-f0-9\-]{36})""");
-            if (match.Success)
+            var matches = Regex.Matches(html, @"href=""/release/([a-f0-9\-]{36})""");
+            foreach (Match match in matches)
             {
-                return match.Groups[1].Value;
+                ids.Add(match.Groups[1].Value);
             }
         }
         catch (Exception ex)
         {
             Log($"FreeDB lookup error: {ex.Message}");
         }
-        return null;
+        return ids.Distinct().ToList();
     }
 
     private async Task<List<CueData>> SearchMusicBrainzAsync(CueData sourceData)
@@ -117,8 +118,8 @@ public class MetadataService
         if (!string.IsNullOrWhiteSpace(sourceData.DiscId))
         {
             Log($"Looking up FreeDB ID: {sourceData.DiscId}");
-            var releaseId = await GetMusicBrainzReleaseIdFromFreeDbAsync(sourceData.DiscId);
-            if (!string.IsNullOrWhiteSpace(releaseId))
+            var releaseIds = await GetMusicBrainzReleaseIdsFromFreeDbAsync(sourceData.DiscId);
+            foreach (var releaseId in releaseIds.Take(10))
             {
                 Log($"Found MusicBrainz Release ID via FreeDB: {releaseId}");
                 try
@@ -180,13 +181,13 @@ public class MetadataService
 
                     Log($"MusicBrainz match (FreeDB): ID={release.Id}, Title={release.Title}, Date={release.Date}, Barcode={release.Barcode}");
                     list.Add(data);
-                    return list;
                 }
                 catch (Exception ex)
                 {
                     Log($"Failed to lookup release by ID {releaseId}: {ex.Message}");
                 }
             }
+            if (list.Count > 0) return list;
         }
 
         string query = "";
