@@ -107,6 +107,6 @@ public class CueFileWriter
             outputLines.AddRange(newHeaders);
         }
 
-        File.WriteAllLines(filePath, outputLines, Encoding.UTF8);
+        File.WriteAllLines(filePath, outputLines, updatedData.OriginalEncoding);
     }
 }

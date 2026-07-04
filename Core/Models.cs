@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace CueComplete.Core;
 
 public class CueData
@@ -18,4 +20,5 @@ public class CueData
     public int? DiscNumber { get; set; }
     public int? Tracks { get; set; }
     public List<string> OriginalLines { get; set; } = new();
+    public Encoding OriginalEncoding { get; set; } = Encoding.UTF8;
 }

@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using System.Text;
 
 namespace CueComplete.Core;
 
@@ -10,7 +11,10 @@ public class CueFileParser
         if (!File.Exists(filePath))
             return data;
 
-        data.OriginalLines = File.ReadAllLines(filePath).ToList();
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        var encoding = DetectEncoding(filePath);
+        data.OriginalEncoding = encoding;
+        data.OriginalLines = File.ReadAllLines(filePath, encoding).ToList();
         
         bool inTrack = false;
 
@@ -134,5 +138,23 @@ public class CueFileParser
             return value.Trim('"');
         }
         return null;
+    }
+
+    private static Encoding DetectEncoding(string filePath)
+    {
+        var bytes = File.ReadAllBytes(filePath);
+        if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
+            return Encoding.UTF8;
+
+        var utf8Strict = new UTF8Encoding(false, true);
+        try
+        {
+            utf8Strict.GetString(bytes);
+            return Encoding.UTF8;
+        }
+        catch (DecoderFallbackException)
+        {
+            return Encoding.GetEncoding(1252);
+        }
     }
 }
