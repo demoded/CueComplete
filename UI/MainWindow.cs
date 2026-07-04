@@ -163,7 +163,14 @@ public class MainWindow : Window
         if (_searchResults != null && _resultsListView.SelectedItem >= 0 && _resultsListView.SelectedItem < _searchResults.Count)
         {
             var data = _searchResults[_resultsListView.SelectedItem];
-            UpdateDetailsView("Search Result Preview:", data);
+            string title = "Search Result Preview:";
+            if (_fileListView.SelectedItem >= 0 && _fileListView.SelectedItem < _cueFiles.Count)
+            {
+                var filePath = _cueFiles[_fileListView.SelectedItem];
+                var folderName = Path.GetFileName(Path.GetDirectoryName(filePath));
+                title = $"Search Result Preview:\nFile: {folderName}\\{Path.GetFileName(filePath)}";
+            }
+            UpdateDetailsView(title, data);
         }
     }
 
