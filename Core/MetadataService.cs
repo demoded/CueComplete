@@ -393,9 +393,33 @@ public class MetadataService
                 data.ReleaseDate = released.GetString() ?? data.ReleaseDate;
             }
             
-            if (item.TryGetProperty("year", out var year))
+            // Only use Discogs master 'year' value for the DATE field
+            if (item.TryGetProperty("master_url", out var masterUrlProp) && !string.IsNullOrWhiteSpace(masterUrlProp.GetString()))
             {
-                data.Date = year.ToString();
+                string mUrl = masterUrlProp.GetString()!;
+                try 
+                {
+                    var mReq = new HttpRequestMessage(HttpMethod.Get, mUrl);
+                    if (!string.IsNullOrWhiteSpace(_discogsToken))
+                        mReq.Headers.Add("Authorization", $"Discogs token={_discogsToken}");
+                    else
+                        mReq.Headers.Add("Authorization", $"Discogs key={_discogsKey}, secret={_discogsSecret}");
+                    
+                    var mRes = await _httpClient.SendAsync(mReq);
+                    if (mRes.IsSuccessStatusCode)
+                    {
+                        var mJson = await mRes.Content.ReadAsStringAsync();
+                        using var mDoc = JsonDocument.Parse(mJson);
+                        if (mDoc.RootElement.TryGetProperty("year", out var mYear))
+                        {
+                            data.Date = mYear.ToString();
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log($"Failed to fetch master_url for year: {ex.Message}");
+                }
             }
             
             if (isDirectReleaseUrl)
@@ -543,9 +567,6 @@ public class MetadataService
             
             if (item.TryGetProperty("catno", out var catno))
                 data.CatalogNumber = catno.GetString();
-            
-            if (item.TryGetProperty("year", out var year))
-                data.Date = year.GetString();
                 
             if (item.TryGetProperty("country", out var country))
                 data.Country = country.GetString();
