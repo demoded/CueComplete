@@ -15,6 +15,7 @@ public class CueData
     public string? DiscogsId { get; set; }
     public string? Source { get; set; }
     public int? Discs { get; set; }
+    public int? DiscNumber { get; set; }
     public int? Tracks { get; set; }
     public List<string> OriginalLines { get; set; } = new();
 }

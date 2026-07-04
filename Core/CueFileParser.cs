@@ -42,16 +42,50 @@ public class CueFileParser
                     data.Country = ExtractRemValue(trimmedLine, "COUNTRY") ?? data.Country;
                     data.ReleaseDate = ExtractRemValue(trimmedLine, "RELEASEDATE") ?? ExtractRemValue(trimmedLine, "RELEASE DATE") ?? data.ReleaseDate;
                     data.DiscId = ExtractRemValue(trimmedLine, "DISCID") ?? data.DiscId;
+                    
+                    var discNumberStr = ExtractRemValue(trimmedLine, "DISCNUMBER");
+                    if (int.TryParse(discNumberStr, out int dn)) data.DiscNumber = dn;
+
+                    var totalDiscsStr = ExtractRemValue(trimmedLine, "TOTALDISCS");
+                    if (int.TryParse(totalDiscsStr, out int td)) data.Discs = td;
                 }
             }
         }
 
-        if (string.IsNullOrWhiteSpace(data.CatalogNumber))
+        var folderName = Path.GetFileName(Path.GetDirectoryName(filePath));
+        if (!string.IsNullOrWhiteSpace(folderName))
         {
-            var folderName = Path.GetFileName(Path.GetDirectoryName(filePath));
-            if (!string.IsNullOrWhiteSpace(folderName))
+            if (string.IsNullOrWhiteSpace(data.CatalogNumber))
             {
                 data.CatalogNumber = ExtractCatalogNumberFromFolderName(folderName);
+            }
+
+            if (!data.DiscNumber.HasValue)
+            {
+                var fileName = Path.GetFileNameWithoutExtension(filePath);
+                var match = Regex.Match(fileName, @"(?:CD|Disc)\s*(\d+)", RegexOptions.IgnoreCase);
+                if (match.Success && int.TryParse(match.Groups[1].Value, out int dn))
+                {
+                    data.DiscNumber = dn;
+                }
+            }
+
+            if (!data.DiscNumber.HasValue)
+            {
+                var match = Regex.Match(folderName, @"(?:CD|Disc)\s*(\d+)", RegexOptions.IgnoreCase);
+                if (match.Success && int.TryParse(match.Groups[1].Value, out int dn))
+                {
+                    data.DiscNumber = dn;
+                }
+            }
+
+            if (!data.Discs.HasValue)
+            {
+                var match = Regex.Match(folderName, @"(\d+)\s*CD", RegexOptions.IgnoreCase);
+                if (match.Success && int.TryParse(match.Groups[1].Value, out int td))
+                {
+                    data.Discs = td;
+                }
             }
         }
 
