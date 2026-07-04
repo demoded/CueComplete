@@ -67,7 +67,7 @@ public class MainWindow : Window
         };
         rightPaneTop.Add(_detailsTextView);
 
-        var rightPaneBottom = new FrameView("Search Results (Press Enter to Apply)")
+        var rightPaneBottom = new FrameView("Search Results (Press Enter to Apply, 's' for Deep Search)")
         {
             X = Pos.Right(leftPane),
             Y = Pos.Bottom(rightPaneTop),
@@ -88,8 +88,27 @@ public class MainWindow : Window
         rightPaneBottom.Add(_resultsListView);
 
         var statusBar = new StatusBar(new StatusItem[] {
-            new StatusItem(Key.CtrlMask | Key.Q, "~^Q~ Quit", () => Application.RequestStop())
+            new StatusItem(Key.CtrlMask | Key.Q, "~^Q~ Quit", () => Application.RequestStop()),
+            new StatusItem(Key.Null, "~S~ Deep Search", () => {
+                if (_fileListView.SelectedItem >= 0 && _fileListView.SelectedItem < _cueFiles.Count)
+                {
+                    LoadCueFile(_cueFiles[_fileListView.SelectedItem], deepSearch: true);
+                }
+            })
         });
+
+        Application.RootKeyEvent += (e) => 
+        {
+            if (e.Key == (Key)'s' || e.Key == (Key)'S' || e.Key == Key.S)
+            {
+                if (_fileListView.SelectedItem >= 0 && _fileListView.SelectedItem < _cueFiles.Count)
+                {
+                    LoadCueFile(_cueFiles[_fileListView.SelectedItem], deepSearch: true);
+                    return true; // Handled
+                }
+            }
+            return false;
+        };
 
         Add(leftPane, rightPaneTop, rightPaneBottom, statusBar);
 
@@ -145,7 +164,7 @@ public class MainWindow : Window
         }
     }
 
-    private void LoadCueFile(string filePath)
+    private void LoadCueFile(string filePath, bool deepSearch = false)
     {
         _fileListView.SetFocus();
         _currentCueData = CueFileParser.Parse(filePath);
@@ -182,7 +201,7 @@ public class MainWindow : Window
             List<CueData> results = new();
             try
             {
-                results = await _metadataService.SearchReleasesAsync(_currentCueData);
+                results = await _metadataService.SearchReleasesAsync(_currentCueData, deepSearch);
             }
             finally
             {

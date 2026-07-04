@@ -35,15 +35,55 @@ public class MetadataService
         OnLog?.Invoke(message);
     }
 
-    public async Task<List<CueData>> SearchReleasesAsync(CueData sourceData)
+    public async Task<List<CueData>> SearchReleasesAsync(CueData sourceData, bool deepSearch = false)
     {
-        Log($"Starting search for: Artist='{sourceData.Artist}', Album='{sourceData.Album}', Barcode='{sourceData.Barcode}'");
+        Log($"Starting search for: Artist='{sourceData.Artist}', Album='{sourceData.Album}', Barcode='{sourceData.Barcode}', CatNo='{sourceData.CatalogNumber}', DeepSearch={deepSearch}");
         var results = new List<CueData>();
+        
+        bool hasCatalogNumber = !string.IsNullOrWhiteSpace(sourceData.CatalogNumber);
+        bool hasBarcode = !string.IsNullOrWhiteSpace(sourceData.Barcode);
+        bool hasDiscogsCreds = !string.IsNullOrWhiteSpace(_discogsToken) || (!string.IsNullOrWhiteSpace(_discogsKey) && !string.IsNullOrWhiteSpace(_discogsSecret));
+
+        if (!deepSearch && !hasCatalogNumber && !hasBarcode)
+        {
+            Log("No CatalogNumber or Barcode found. Falling back to deep search.");
+            deepSearch = true;
+        }
+
+        if (!deepSearch)
+        {
+            if (hasCatalogNumber && hasDiscogsCreds)
+            {
+                try
+                {
+                    Log($"Fast search for Catalog Number: {sourceData.CatalogNumber}");
+                    await PerformDiscogsTextSearchAsync(sourceData.CatalogNumber, sourceData, results);
+                }
+                catch (Exception ex)
+                {
+                    Log($"Fast search Discogs Error: {ex.Message}");
+                }
+            }
+            else if (hasBarcode && hasDiscogsCreds)
+            {
+                try
+                {
+                    Log($"Fast search for Barcode: {sourceData.Barcode}");
+                    await PerformDiscogsTextSearchAsync(sourceData.Barcode, sourceData, results);
+                }
+                catch (Exception ex)
+                {
+                    Log($"Fast search Discogs Error: {ex.Message}");
+                }
+            }
+            
+            return results;
+        }
+
         var mbResults = new List<CueData>();
         
         // 0. Prioritized Discogs Catalog Number Search
-        if (!string.IsNullOrWhiteSpace(sourceData.CatalogNumber) && 
-           (!string.IsNullOrWhiteSpace(_discogsToken) || (!string.IsNullOrWhiteSpace(_discogsKey) && !string.IsNullOrWhiteSpace(_discogsSecret))))
+        if (hasCatalogNumber && hasDiscogsCreds)
         {
             try
             {
@@ -81,8 +121,7 @@ public class MetadataService
         }
 
         // 2. Discogs Search
-        if (!string.IsNullOrWhiteSpace(_discogsToken) || 
-           (!string.IsNullOrWhiteSpace(_discogsKey) && !string.IsNullOrWhiteSpace(_discogsSecret)))
+        if (hasDiscogsCreds)
         {
             try
             {
