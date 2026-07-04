@@ -151,6 +151,9 @@ public class MainWindow : Window
                 var previewData = CueFileParser.Parse(filePath);
                 var folderName = Path.GetFileName(Path.GetDirectoryName(filePath));
                 UpdateDetailsView($"File: {folderName}\\{Path.GetFileName(filePath)}", previewData);
+                
+                _searchResults.Clear();
+                _resultsListView.SetSource(_searchResults);
             } catch {}
         }
     }
