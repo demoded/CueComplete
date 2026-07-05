@@ -146,6 +146,19 @@ public class CueFileParser
         if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
             return Encoding.UTF8;
 
+        var detector = new Ude.CharsetDetector();
+        detector.Feed(bytes, 0, bytes.Length);
+        detector.DataEnd();
+        
+        if (detector.Charset != null)
+        {
+            try 
+            {
+                return Encoding.GetEncoding(detector.Charset);
+            }
+            catch { }
+        }
+
         var utf8Strict = new UTF8Encoding(false, true);
         try
         {
