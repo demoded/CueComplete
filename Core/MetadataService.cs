@@ -562,8 +562,22 @@ public class MetadataService
                 Album = item.GetProperty("title").GetString(), 
             };
             
-            if (item.TryGetProperty("barcode", out var dbBarcodes) && dbBarcodes.ValueKind == JsonValueKind.Array && dbBarcodes.GetArrayLength() > 0)
-                data.Barcode = dbBarcodes[0].GetString();
+            if (item.TryGetProperty("barcode", out var dbBarcodes) && dbBarcodes.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var b in dbBarcodes.EnumerateArray())
+                {
+                    var barcodeStr = b.GetString();
+                    if (!string.IsNullOrWhiteSpace(barcodeStr))
+                    {
+                        var digitCount = barcodeStr.Count(char.IsDigit);
+                        if (digitCount >= 6 && !barcodeStr.Contains("JASRAC", StringComparison.OrdinalIgnoreCase))
+                        {
+                            data.Barcode = barcodeStr;
+                            break;
+                        }
+                    }
+                }
+            }
             
             if (item.TryGetProperty("catno", out var catno))
                 data.CatalogNumber = catno.GetString();
