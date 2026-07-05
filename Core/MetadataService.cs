@@ -155,6 +155,7 @@ public class MetadataService
             if (!response.IsSuccessStatusCode) return ids;
             
             var html = await response.Content.ReadAsStringAsync();
+            Log($"FreeDB API raw response for {url}: {html}");
             var matches = Regex.Matches(html, @"href=""/release/([a-f0-9\-]{36})""");
             foreach (Match match in matches)
             {
@@ -378,6 +379,7 @@ public class MetadataService
             if (!response.IsSuccessStatusCode) return;
 
             var json = await response.Content.ReadAsStringAsync();
+            Log($"Discogs API raw response for {url}: {json}");
             using var doc = JsonDocument.Parse(json);
 
             JsonElement item = doc.RootElement;
@@ -409,6 +411,7 @@ public class MetadataService
                     if (mRes.IsSuccessStatusCode)
                     {
                         var mJson = await mRes.Content.ReadAsStringAsync();
+                        Log($"Discogs master API raw response for {mUrl}: {mJson}");
                         using var mDoc = JsonDocument.Parse(mJson);
                         if (mDoc.RootElement.TryGetProperty("year", out var mYear))
                         {
