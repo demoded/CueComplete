@@ -43,8 +43,8 @@ public class CueFileWriter
         addHeader("CATALOGNUMBER", updatedData.CatalogNumber, true);
         addHeader("COUNTRY", updatedData.Country, true);
         addHeader("RELEASEDATE", updatedData.ReleaseDate, true);
-        addHeader("DISCNUMBER", updatedData.DiscNumber?.ToString(), true);
-        addHeader("TOTALDISCS", updatedData.Discs?.ToString(), true);
+        addHeader("DISCNUMBER", (updatedData.DiscNumber ?? 1).ToString(), true);
+        addHeader("TOTALDISCS", (updatedData.Discs ?? 1).ToString(), true);
         addHeader("PERFORMER", updatedData.Artist, false);
         addHeader("TITLE", updatedData.Album, false);
         addHeader("CATALOG", updatedData.Barcode?.Replace(" ", ""), false);
