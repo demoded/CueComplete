@@ -94,7 +94,8 @@ public class MainWindow : Window
                 {
                     LoadCueFile(_cueFiles[_fileListView.SelectedItem], deepSearch: true);
                 }
-            })
+            }),
+            new StatusItem(Key.CtrlMask | Key.L, "~^L~ Toggle Log", () => ToggleLogging())
         });
 
         Application.RootKeyEvent += (e) => 
@@ -107,6 +108,11 @@ public class MainWindow : Window
                     return true; // Handled
                 }
             }
+            if (e.Key == (Key.CtrlMask | Key.L))
+            {
+                ToggleLogging();
+                return true;
+            }
             return false;
         };
 
@@ -116,6 +122,13 @@ public class MainWindow : Window
         {
             UpdateFilePreview();
         }
+    }
+
+    private void ToggleLogging()
+    {
+        MetadataService.IsLoggingEnabled = !MetadataService.IsLoggingEnabled;
+        var status = MetadataService.IsLoggingEnabled ? "enabled" : "disabled";
+        MessageBox.Query("Logging", $"Application logging is now {status}.", "OK");
     }
 
     private void FileListView_OpenSelectedItem(ListViewItemEventArgs obj)

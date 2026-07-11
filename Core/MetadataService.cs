@@ -29,9 +29,14 @@ public class MetadataService
         _httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("CueComplete", "1.0"));
     }
 
+    public static bool IsLoggingEnabled { get; set; } = true;
+
     private void Log(string message)
     {
-        try { System.IO.File.AppendAllText("app.log", $"[{DateTime.Now:O}] {message}\n"); } catch { }
+        if (IsLoggingEnabled)
+        {
+            try { System.IO.File.AppendAllText("app.log", $"[{DateTime.Now:O}] {message}\n"); } catch { }
+        }
         OnLog?.Invoke(message);
     }
 
