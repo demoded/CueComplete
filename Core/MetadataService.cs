@@ -466,7 +466,15 @@ public class MetadataService
 
             if (isDirectReleaseUrl && item.TryGetProperty("tracklist", out var tracklist) && tracklist.ValueKind == JsonValueKind.Array)
             {
-                data.Tracks = tracklist.GetArrayLength();
+                int trackCount = 0;
+                foreach (var trackItem in tracklist.EnumerateArray())
+                {
+                    if (trackItem.TryGetProperty("type_", out var typeProp) && typeProp.GetString() == "track")
+                    {
+                        trackCount++;
+                    }
+                }
+                data.Tracks = trackCount;
             }
 
             if (isDirectReleaseUrl && item.TryGetProperty("formats", out var formats) && formats.ValueKind == JsonValueKind.Array)
