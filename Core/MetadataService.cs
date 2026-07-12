@@ -489,7 +489,7 @@ public class MetadataService
                         if (trackItem.TryGetProperty("position", out var posProp))
                         {
                             var pos = posProp.GetString()?.ToLowerInvariant() ?? "";
-                            if (pos.Contains("video") || pos.Contains("data") || pos.Contains("cd-rom") || pos.Contains("cdrom") || pos.Contains("multimedia") || pos.Contains("enhanced"))
+                            if (pos.Contains("video") || pos.Contains("data") || pos.Contains("cd-rom") || pos.Contains("cdrom") || pos.Contains("multimedia") || pos.Contains("enhanced") || pos.Contains("dvd") || pos.Contains("blu"))
                             {
                                 continue;
                             }
