@@ -486,6 +486,14 @@ public class MetadataService
                 {
                     if (trackItem.TryGetProperty("type_", out var typeProp) && typeProp.GetString() == "track")
                     {
+                        if (trackItem.TryGetProperty("position", out var posProp))
+                        {
+                            var pos = posProp.GetString()?.ToLowerInvariant() ?? "";
+                            if (pos.Contains("video") || pos.Contains("data") || pos.Contains("cd-rom") || pos.Contains("cdrom") || pos.Contains("multimedia") || pos.Contains("enhanced"))
+                            {
+                                continue;
+                            }
+                        }
                         trackCount++;
                     }
                 }
