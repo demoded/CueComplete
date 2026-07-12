@@ -9,6 +9,7 @@ class Program
 {
     static void Main(string[] args)
     {
+        Console.OutputEncoding = System.Text.Encoding.UTF8;
         var targetDirectory = args.Length > 0 ? args[0] : Directory.GetCurrentDirectory();
         
         if (!Directory.Exists(targetDirectory))

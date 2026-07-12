@@ -432,8 +432,18 @@ public class MetadataService
             
             if (isDirectReleaseUrl)
             {
-                if (string.IsNullOrEmpty(data.Artist) && item.TryGetProperty("artists", out var artists) && artists.ValueKind == JsonValueKind.Array && artists.GetArrayLength() > 0)
-                    data.Artist = CleanDiscogsString(artists[0].GetProperty("name").GetString());
+                if (item.TryGetProperty("artists", out var artists) && artists.ValueKind == JsonValueKind.Array && artists.GetArrayLength() > 0)
+                {
+                    var artistObj = artists[0];
+                    string? name = artistObj.TryGetProperty("name", out var nProp) ? nProp.GetString() : null;
+                    string? anv = artistObj.TryGetProperty("anv", out var aProp) ? aProp.GetString() : null;
+                    
+                    name = CleanDiscogsString(name);
+                    string finalArtist = string.IsNullOrWhiteSpace(anv) ? (name ?? "") : $"{anv} = {name}";
+                    
+                    if (!string.IsNullOrWhiteSpace(finalArtist))
+                        data.Artist = finalArtist;
+                }
                     
                 if (string.IsNullOrEmpty(data.Album) && item.TryGetProperty("title", out var title))
                     data.Album = title.GetString();
