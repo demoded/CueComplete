@@ -29,7 +29,7 @@ public class MetadataService
         _httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("CueComplete", "1.0"));
     }
 
-    public static bool IsLoggingEnabled { get; set; } = true;
+    public static bool IsLoggingEnabled { get; set; } = false;
 
     private void Log(string message)
     {
