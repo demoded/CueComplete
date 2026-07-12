@@ -107,6 +107,23 @@ public class CueFileWriter
             outputLines.AddRange(newHeaders);
         }
 
-        File.WriteAllLines(filePath, outputLines, updatedData.OriginalEncoding);
+        var encodingToUse = updatedData.OriginalEncoding;
+        var fullText = string.Join(Environment.NewLine, outputLines);
+        
+        try 
+        {
+            var encodingWithFallback = Encoding.GetEncoding(
+                encodingToUse.CodePage, 
+                new EncoderExceptionFallback(), 
+                new DecoderExceptionFallback()
+            );
+            encodingWithFallback.GetBytes(fullText);
+        }
+        catch (EncoderFallbackException)
+        {
+            encodingToUse = new UTF8Encoding(true);
+        }
+
+        File.WriteAllLines(filePath, outputLines, encodingToUse);
     }
 }
