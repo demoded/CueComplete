@@ -154,7 +154,12 @@ public class CueFileParser
         {
             try 
             {
-                return Encoding.GetEncoding(detector.Charset);
+                var charset = detector.Charset.ToLowerInvariant();
+                if (charset == "maccyrillic" || charset == "x-mac-cyrillic" || charset == "iso-8859-8") 
+                {
+                    charset = "windows-1251";
+                }
+                return Encoding.GetEncoding(charset);
             }
             catch { }
         }
