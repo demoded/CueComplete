@@ -10,25 +10,7 @@ class Program
     static void Main(string[] args)
     {
         Console.OutputEncoding = System.Text.Encoding.UTF8;
-        var targetDirectory = args.Length > 0 ? args[0] : Directory.GetCurrentDirectory();
-        
-        if (!Directory.Exists(targetDirectory))
-        {
-            Console.WriteLine($"Directory does not exist: {targetDirectory}");
-            return;
-        }
 
-        Console.WriteLine($"Scanning for .cue files in: {targetDirectory}");
-        var cueFiles = Directory.GetFiles(targetDirectory, "*.cue", SearchOption.AllDirectories).ToList();
-
-        if (cueFiles.Count == 0)
-        {
-            Console.WriteLine("No .cue files found. Exiting.");
-            return;
-        }
-
-        Console.WriteLine($"Found {cueFiles.Count} .cue file(s).");
-        
         // Load .env from user profile
         var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var envPath = Path.Combine(userProfile, ".env");
@@ -47,6 +29,45 @@ class Program
         {
             Application.UseSystemConsole = true;
             Application.Init();
+
+            string? targetDirectory = args.Length > 0 ? args[0] : null;
+
+            if (string.IsNullOrEmpty(targetDirectory))
+            {
+                var openDialog = new OpenDialog("Select Directory", "Choose a directory containing .cue files")
+                {
+                    CanChooseFiles = false,
+                    CanChooseDirectories = true,
+                    AllowsMultipleSelection = false
+                };
+
+                Application.Run(openDialog);
+
+                if (openDialog.Canceled)
+                {
+                    Application.Shutdown();
+                    return;
+                }
+
+                targetDirectory = openDialog.FilePath.ToString();
+            }
+
+            if (!Directory.Exists(targetDirectory))
+            {
+                MessageBox.Query("Error", $"Directory does not exist:\n{targetDirectory}", "OK");
+                Application.Shutdown();
+                return;
+            }
+
+            var cueFiles = Directory.GetFiles(targetDirectory, "*.cue", SearchOption.AllDirectories).ToList();
+
+            if (cueFiles.Count == 0)
+            {
+                MessageBox.Query("Info", "No .cue files found in the selected directory.", "OK");
+                Application.Shutdown();
+                return;
+            }
+
             var mainWindow = new MainWindow(cueFiles, metadataService);
             Application.Run(mainWindow);
             Application.Shutdown();
