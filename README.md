@@ -38,6 +38,25 @@ dotnet run -- "C:\Path\To\Your\Music\Folder"
 - **Recursive Scanning**: Automatically finds all `.cue` files in the given directory and its subdirectories.
 - **Metadata Enrichment**: Connects to external services to fetch accurate track and album information.
 
+## Search Logic
+
+CueComplete uses a tiered search strategy to find accurate metadata for your releases.
+
+### Fast Search
+The fast search path is designed to save API calls and time. It bypasses MusicBrainz entirely and relies exclusively on Discogs.
+- **Criteria:** The source `.cue` data must have either a `CatalogNumber` or a `Barcode` (and Discogs credentials must be configured).
+- **Execution:** It queries the Discogs database using the exact identifier.
+
+### Deep Search
+The deep search orchestrates a comprehensive, multi-layered lookup across both MusicBrainz and Discogs, leveraging data from one API to enrich data from the other. A deep search is automatically triggered if the source `.cue` file lacks a Catalog Number or Barcode.
+
+1. **Prioritized Discogs Lookup:** If a Catalog Number is present, it is queried against Discogs first.
+2. **MusicBrainz Search:** 
+   - Uses FreeDB IDs (if present) to resolve to MusicBrainz releases.
+   - Falls back to querying MusicBrainz via Barcode or `Artist + Album`.
+   - Analyzes MusicBrainz "Relationships" data. If a release links to a Discogs URL, CueComplete fetches the Discogs metadata to enrich the MusicBrainz data.
+3. **Discogs Fallback Search:** Collects all unique Discogs IDs and Barcodes found during the MusicBrainz step and queries the Discogs API directly for those specific releases. If nothing is found, it performs a final raw text search on Discogs.
+
 ## License
 
 This project is licensed under the MIT License.
