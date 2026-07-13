@@ -7,23 +7,8 @@ on:
 
 jobs:
   build-and-release:
-    name: Build and Release for ${{ matrix.rid }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - os: windows-latest
-            rid: win-x64
-            archive_ext: .zip
-          - os: ubuntu-latest
-            rid: linux-x64
-            archive_ext: .tar.gz
-          - os: macos-latest
-            rid: osx-x64
-            archive_ext: .tar.gz
-          - os: macos-14 # Mac with Apple Silicon
-            rid: osx-arm64
-            archive_ext: .tar.gz
+    name: Build and Release for win-x64
+    runs-on: windows-latest
 
     steps:
       - name: Checkout Code
@@ -35,21 +20,15 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Publish
-        run: dotnet publish -c Release -r ${{ matrix.rid }} -p:PublishSingleFile=true --self-contained true -o ./publish
+        run: dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true -o ./publish
 
-      - name: Create Zip Archive (Windows)
-        if: matrix.os == 'windows-latest'
-        run: Compress-Archive -Path ./publish/* -DestinationPath CueComplete-${{ matrix.rid }}${{ matrix.archive_ext }}
+      - name: Create Zip Archive
+        run: Compress-Archive -Path ./publish/* -DestinationPath CueComplete-win-x64.zip
         shell: pwsh
-
-      - name: Create Tar Archive (Linux/macOS)
-        if: matrix.os != 'windows-latest'
-        run: tar -czvf CueComplete-${{ matrix.rid }}${{ matrix.archive_ext }} -C ./publish .
-        shell: bash
 
       - name: Upload to Release
         uses: softprops/action-gh-release@v2
         with:
-          files: CueComplete-${{ matrix.rid }}${{ matrix.archive_ext }}
+          files: CueComplete-win-x64.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
