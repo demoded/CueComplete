@@ -12,12 +12,17 @@ CueComplete is a Terminal User Interface (TUI) application built with .NET 10. I
 
 The application uses external APIs (like Discogs) to fetch metadata. You need to provide your API credentials via a `.env` file located in your user profile directory (e.g., `C:\Users\%USERNAME%\.env` on Windows or `~/.env` on macOS/Linux).
 
-Add the following variables to your `.env` file:
+Add your authentication token to your `.env` file. CueComplete prefers a Personal Access Token, but also supports a Consumer Key and Secret as a fallback if the token is omitted.
 
+**Option 1: Personal Access Token (Recommended)**
+```env
+DISCOGS_PERSONAL_ACCESS_TOKEN=your_personal_access_token
+```
+
+**Option 2: Consumer Key & Secret (Fallback)**
 ```env
 DISCOGS_CONSUMER_KEY=your_consumer_key
 DISCOGS_CONSUMER_SECRET=your_consumer_secret
-DISCOGS_PERSONAL_ACCESS_TOKEN=your_personal_access_token
 ```
 
 ## Usage
