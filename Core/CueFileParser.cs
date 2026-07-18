@@ -67,7 +67,7 @@ public class CueFileParser
             if (!data.DiscNumber.HasValue)
             {
                 var fileName = Path.GetFileNameWithoutExtension(filePath);
-                var match = Regex.Match(fileName, @"(?:CD|Disc)\s*(\d+)", RegexOptions.IgnoreCase);
+                var match = Regex.Match(fileName, @"\b(?:CD|Disc)\s*(\d+)", RegexOptions.IgnoreCase);
                 if (match.Success && int.TryParse(match.Groups[1].Value, out int dn))
                 {
                     data.DiscNumber = dn;
@@ -76,7 +76,7 @@ public class CueFileParser
 
             if (!data.DiscNumber.HasValue)
             {
-                var match = Regex.Match(folderName, @"(?:CD|Disc)\s*(\d+)", RegexOptions.IgnoreCase);
+                var match = Regex.Match(folderName, @"\b(?:CD|Disc)\s*(\d+)", RegexOptions.IgnoreCase);
                 if (match.Success && int.TryParse(match.Groups[1].Value, out int dn))
                 {
                     data.DiscNumber = dn;
@@ -85,7 +85,7 @@ public class CueFileParser
 
             if (!data.Discs.HasValue)
             {
-                var match = Regex.Match(folderName, @"(\d+)\s*CD", RegexOptions.IgnoreCase);
+                var match = Regex.Match(folderName, @"(\d+)\s*CD\b", RegexOptions.IgnoreCase);
                 if (match.Success && int.TryParse(match.Groups[1].Value, out int td))
                 {
                     data.Discs = td;
