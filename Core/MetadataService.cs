@@ -81,8 +81,13 @@ public class MetadataService
                     Log($"Fast search Discogs Error: {ex.Message}");
                 }
             }
+            if (results.Count > 0)
+            {
+                return results;
+            }
             
-            return results;
+            Log("Fast search returned no results. Falling back to deep search.");
+            deepSearch = true;
         }
 
         var mbResults = new List<CueData>();
