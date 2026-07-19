@@ -108,16 +108,6 @@ public class MetadataService
             mbResults = await SearchMusicBrainzAsync(sourceData);
             Log($"MusicBrainz returned {mbResults.Count} results.");
             results.AddRange(mbResults);
-            
-            var bestMb = mbResults.FirstOrDefault(r => !string.IsNullOrEmpty(r.DiscogsId)) ?? 
-                         mbResults.FirstOrDefault(r => !string.IsNullOrEmpty(r.Barcode));
-            if (bestMb != null)
-            {
-                if (!string.IsNullOrEmpty(bestMb.DiscogsId))
-                    sourceData.DiscogsId = bestMb.DiscogsId;
-                if (!string.IsNullOrEmpty(bestMb.Barcode) && string.IsNullOrEmpty(sourceData.Barcode))
-                    sourceData.Barcode = bestMb.Barcode;
-            }
         }
         catch (Exception ex)
         {
@@ -250,6 +240,23 @@ public class MetadataService
                     Log($"Failed to lookup release by ID {releaseId}: {ex.Message}");
                 }
             }
+            
+            if (list.Count > 0 && !string.IsNullOrWhiteSpace(sourceData.Artist))
+            {
+                var artistStr = sourceData.Artist.ToLower();
+                var filteredList = list.Where(r => r.Artist != null && r.Artist.ToLower().Contains(artistStr)).ToList();
+                if (filteredList.Count > 0)
+                {
+                    Log($"Filtered FreeDB MusicBrainz results by artist '{sourceData.Artist}': count changed from {list.Count} to {filteredList.Count}");
+                    list = filteredList;
+                }
+                else
+                {
+                    Log($"All FreeDB MusicBrainz results filtered out by artist '{sourceData.Artist}'. Likely a FreeDB ID collision.");
+                    list.Clear();
+                }
+            }
+
             if (list.Count > 0) return list;
         }
 
