@@ -16,6 +16,15 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate Changelog
+        id: changelog
+        uses: requarks/changelog-action@v1
+        with:
+          token: ${{ github.token }}
+          tag: ${{ github.ref_name }}
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -33,6 +42,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: CueComplete-win-x64.zip
-          generate_release_notes: true
+          body: ${{ steps.changelog.outputs.changes }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
