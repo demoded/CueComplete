@@ -4,6 +4,10 @@
 
 CueComplete is a Terminal User Interface (TUI) application built with .NET 10. It scans a specified directory for `.cue` files and helps you complete or enrich their metadata.
 
+## Why I Built This
+
+The primary motivation behind CueComplete was a simple but deeply annoying problem: updating existing `.cue` files in my music archive that had randomly missing parts.
+
 ## Prerequisites
 
 - [.NET 10.0 SDK](https://dotnet.microsoft.com/download)
