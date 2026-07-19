@@ -68,9 +68,20 @@ public class CueFileParser
                 data.CatalogNumber = ExtractCatalogNumberFromFolderName(folderName);
             }
 
+            var fileName = Path.GetFileNameWithoutExtension(filePath);
+            
+            if (string.IsNullOrWhiteSpace(data.Artist) || string.IsNullOrWhiteSpace(data.Album))
+            {
+                var parts = fileName.Split(new[] { " - " }, 2, StringSplitOptions.None);
+                if (parts.Length == 2)
+                {
+                    data.Artist ??= parts[0].Trim();
+                    data.Album ??= parts[1].Trim();
+                }
+            }
+
             if (!data.DiscNumber.HasValue)
             {
-                var fileName = Path.GetFileNameWithoutExtension(filePath);
                 var match = Regex.Match(fileName, @"\b(?:CD|Disc)\s*(\d+)", RegexOptions.IgnoreCase);
                 if (match.Success && int.TryParse(match.Groups[1].Value, out int dn))
                 {
