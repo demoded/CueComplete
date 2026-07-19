@@ -237,7 +237,7 @@ public class MainWindow : Window
                     string extra = "";
                     if (r.Discs.HasValue || r.Tracks.HasValue)
                     {
-                        var d = r.Discs.HasValue ? $"{r.Discs}xCD" : "";
+                        var d = r.DiscNumber.HasValue && r.Discs.HasValue ? $"[CD {r.DiscNumber} of {r.Discs}]" : r.Discs.HasValue ? $"{r.Discs}xCD" : "";
                         var t = r.Tracks.HasValue ? $"{r.Tracks} Tracks" : "";
                         extra = " - " + string.Join(", ", new[] { d, t }.Where(s => !string.IsNullOrEmpty(s)));
                     }
@@ -274,6 +274,9 @@ public class MainWindow : Window
             _currentCueData.Country = selectedResult.Country ?? _currentCueData.Country;
             _currentCueData.Barcode = selectedResult.Barcode ?? _currentCueData.Barcode;
             _currentCueData.ReleaseDate = selectedResult.ReleaseDate ?? _currentCueData.ReleaseDate;
+            _currentCueData.Comment = selectedResult.Comment ?? _currentCueData.Comment;
+            _currentCueData.DiscNumber = selectedResult.DiscNumber ?? _currentCueData.DiscNumber;
+            _currentCueData.Discs = selectedResult.Discs ?? _currentCueData.Discs;
 
             var filePath = _cueFiles[_fileListView.SelectedItem];
             CueFileWriter.Save(filePath, _currentCueData);

@@ -19,6 +19,7 @@ public class CueData
     public int? Discs { get; set; }
     public int? DiscNumber { get; set; }
     public int? Tracks { get; set; }
+    public string? Comment { get; set; }
     public List<string> OriginalLines { get; set; } = new();
     public Encoding OriginalEncoding { get; set; } = Encoding.UTF8;
 }

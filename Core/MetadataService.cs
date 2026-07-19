@@ -376,7 +376,7 @@ public class MetadataService
         await FetchAndApplyDiscogsDataAsync(data, url, false);
     }
 
-    private async Task FetchAndApplyDiscogsDataAsync(CueData data, string url, bool isDirectReleaseUrl)
+    private async Task FetchAndApplyDiscogsDataAsync(CueData data, string url, bool isDirectReleaseUrl, CueData? sourceData = null)
     {
         if (string.IsNullOrWhiteSpace(_discogsToken) && 
            (string.IsNullOrWhiteSpace(_discogsKey) || string.IsNullOrWhiteSpace(_discogsSecret)))
@@ -493,23 +493,76 @@ public class MetadataService
 
             if (isDirectReleaseUrl && item.TryGetProperty("tracklist", out var tracklist) && tracklist.ValueKind == JsonValueKind.Array)
             {
-                int trackCount = 0;
+                int totalTrackCount = 0;
+                var discTracks = new Dictionary<string, int>();
+                var discTitles = new Dictionary<string, string>();
+                string currentHeading = "";
+                
                 foreach (var trackItem in tracklist.EnumerateArray())
                 {
-                    if (trackItem.TryGetProperty("type_", out var typeProp) && typeProp.GetString() == "track")
+                    if (trackItem.TryGetProperty("type_", out var typeProp))
                     {
-                        if (trackItem.TryGetProperty("position", out var posProp))
+                        var tType = typeProp.GetString();
+                        if (tType == "heading")
                         {
-                            var pos = posProp.GetString()?.ToLowerInvariant() ?? "";
-                            if (pos.Contains("video") || pos.Contains("data") || pos.Contains("cd-rom") || pos.Contains("cdrom") || pos.Contains("multimedia") || pos.Contains("enhanced") || pos.Contains("dvd") || pos.Contains("blu"))
+                            currentHeading = trackItem.TryGetProperty("title", out var titleProp) ? titleProp.GetString() ?? "" : "";
+                        }
+                        else if (tType == "track")
+                        {
+                            if (trackItem.TryGetProperty("position", out var posProp))
                             {
-                                continue;
+                                var pos = posProp.GetString() ?? "";
+                                var posLower = pos.ToLowerInvariant();
+                                if (posLower.Contains("video") || posLower.Contains("data") || posLower.Contains("cd-rom") || posLower.Contains("cdrom") || posLower.Contains("multimedia") || posLower.Contains("enhanced") || posLower.Contains("dvd") || posLower.Contains("blu"))
+                                {
+                                    continue;
+                                }
+                                
+                                string prefix = pos;
+                                int dashIndex = pos.IndexOf('-');
+                                if (dashIndex > 0)
+                                {
+                                    prefix = pos.Substring(0, dashIndex).Trim();
+                                }
+                                else 
+                                {
+                                    prefix = "Default";
+                                    var match = System.Text.RegularExpressions.Regex.Match(pos, @"^([a-zA-Z]+|\d+)");
+                                    if (match.Success) prefix = match.Value;
+                                }
+                                
+                                if (!discTracks.ContainsKey(prefix))
+                                {
+                                    discTracks[prefix] = 0;
+                                    discTitles[prefix] = currentHeading; 
+                                }
+                                discTracks[prefix]++;
+                                totalTrackCount++;
                             }
                         }
-                        trackCount++;
                     }
                 }
-                data.Tracks = trackCount;
+                
+                data.Tracks = totalTrackCount;
+                
+                if (sourceData != null && sourceData.Tracks.HasValue && sourceData.Tracks.Value > 0)
+                {
+                    var matchedDiscs = discTracks.Where(kvp => kvp.Value == sourceData.Tracks.Value).ToList();
+                    if (matchedDiscs.Count == 1)
+                    {
+                        var matchedPrefix = matchedDiscs[0].Key;
+                        var orderedPrefixes = discTracks.Keys.ToList();
+                        
+                        data.DiscNumber = orderedPrefixes.IndexOf(matchedPrefix) + 1;
+                        data.Discs = orderedPrefixes.Count;
+                        
+                        var title = discTitles.ContainsKey(matchedPrefix) ? discTitles[matchedPrefix] : null;
+                        if (!string.IsNullOrWhiteSpace(title))
+                        {
+                            data.Comment = title;
+                        }
+                    }
+                }
             }
 
             if (isDirectReleaseUrl && item.TryGetProperty("formats", out var formats) && formats.ValueKind == JsonValueKind.Array)
@@ -520,7 +573,9 @@ public class MetadataService
                     if (format.TryGetProperty("qty", out var qtyStr) && int.TryParse(qtyStr.GetString(), out int q))
                         discs += q;
                 }
-                if (discs > 0) data.Discs = discs;
+                // Only overwrite Discs from formats if we haven't already determined it from multi-CD logic above, 
+                // or if multi-CD logic yielded 1 disc but format says otherwise.
+                if (discs > 0 && (!data.Discs.HasValue || data.Discs.Value <= 1)) data.Discs = discs;
             }
         }
         catch (Exception ex)
@@ -546,7 +601,7 @@ public class MetadataService
         foreach (var id in discogsIds)
         {
             var data = new CueData { Source = "[DC]", DiscogsId = id };
-            await FetchAndApplyDiscogsDataAsync(data, $"https://api.discogs.com/releases/{id}", true);
+            await FetchAndApplyDiscogsDataAsync(data, $"https://api.discogs.com/releases/{id}", true, sourceData);
             if (!string.IsNullOrEmpty(data.Album))
             {
                 list.Add(data);
@@ -657,7 +712,7 @@ public class MetadataService
 
             if (item.TryGetProperty("resource_url", out var resourceUrl))
             {
-                tasks.Add(FetchAndApplyDiscogsDataAsync(data, resourceUrl.GetString(), true));
+                tasks.Add(FetchAndApplyDiscogsDataAsync(data, resourceUrl.GetString(), true, sourceData));
             }
 
             list.Add(data);
