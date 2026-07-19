@@ -23,11 +23,14 @@ public class CueFileParser
             var trimmedLine = line.Trim();
             
             // If we hit a TRACK or FILE, we're out of the global scope
-            if (trimmedLine.StartsWith("FILE", StringComparison.OrdinalIgnoreCase) || 
-                trimmedLine.StartsWith("TRACK", StringComparison.OrdinalIgnoreCase))
+            if (trimmedLine.StartsWith("FILE", StringComparison.OrdinalIgnoreCase))
             {
                 inTrack = true;
-                // We only care about global metadata for now, though TRACK artist/title could be useful later.
+            }
+            else if (trimmedLine.StartsWith("TRACK", StringComparison.OrdinalIgnoreCase))
+            {
+                inTrack = true;
+                data.Tracks = (data.Tracks ?? 0) + 1;
             }
 
             if (!inTrack)
@@ -46,6 +49,7 @@ public class CueFileParser
                     data.Country = ExtractRemValue(trimmedLine, "COUNTRY") ?? data.Country;
                     data.ReleaseDate = ExtractRemValue(trimmedLine, "RELEASEDATE") ?? ExtractRemValue(trimmedLine, "RELEASE DATE") ?? data.ReleaseDate;
                     data.DiscId = ExtractRemValue(trimmedLine, "DISCID") ?? data.DiscId;
+                    data.Comment = ExtractRemValue(trimmedLine, "COMMENT") ?? data.Comment;
                     
                     var discNumberStr = ExtractRemValue(trimmedLine, "DISCNUMBER");
                     if (int.TryParse(discNumberStr, out int dn)) data.DiscNumber = dn;
