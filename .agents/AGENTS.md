@@ -5,5 +5,7 @@
 - The 'rg' (ripgrep) CLI tool is installed and available in the terminal. If 'grep_search' fails (e.g. due to binary file detection or long lines), use 'run_command' with 'rg' and appropriate flags like '-a'.
 - ALWAYS allow commands that start with `Get-Content` without asking for permission, as this has been explicitly granted by the user for this project.
 - **Commit Messages**: ALWAYS use Conventional Commits formatting for git commit messages so the automated GitHub Action can generate categorized release notes. Use prefixes like `feat: ` (new features), `fix: ` (bug fixes), `docs: ` (documentation), or `chore: ` (maintenance/refactoring).
-- **Progress Logging**: ALWAYS log all changes made step by step into a `progress.md` file in the project root.
+- **Planning**: ALWAYS save refactoring/feature plans inside the `.agents/` folder using a timestamp-dated filename format: `.agents/plan YYYYMMDDTHHMM.md` (e.g. `.agents/plan 20260809T0900.md`).
+- **Progress Logging**: ALWAYS log all changes step by step in `.agents/progress.md`. All log entries in `.agents/progress.md` must be timestamp/datetime based (e.g., `### [2026-08-09 10:31] ...`), not just simple numbers.
+
 
