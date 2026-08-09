@@ -63,6 +63,12 @@
 - Updated version in [`CueComplete.csproj`](file:///D:/git/CueComplete/CueComplete.csproj) to `1.1.0`.
 - Created and pushed git tag `v1.1.0` to trigger automated GitHub Actions release workflow.
 
+### [2026-08-09 14:33] Fix GitHub Actions Release Workflow Build Failure
+- Added `<IsPublishable>false</IsPublishable>` and `<PublishSingleFile>false</PublishSingleFile>` to [`CueComplete.Tests/CueComplete.Tests.csproj`](file:///D:/git/CueComplete/CueComplete.Tests/CueComplete.Tests.csproj) to prevent test project single-file publish errors (`NETSDK1098`).
+- Updated [`.github/workflows/release.yml`](file:///D:/git/CueComplete/.github/workflows/release.yml) to explicitly target `CueComplete.csproj` during `dotnet publish`.
+- Re-tagged `v1.1.0` and pushed tag to GitHub.
+
+
 
 
 

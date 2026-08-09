@@ -32,7 +32,8 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Publish
-        run: dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true -o ./publish
+        run: dotnet publish CueComplete.csproj -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true -o ./publish
+
 
       - name: Create Zip Archive
         run: Compress-Archive -Path ./publish/* -DestinationPath CueComplete-win-x64.zip
