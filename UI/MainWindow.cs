@@ -151,7 +151,9 @@ public class MainWindow : Window
             $"Country: {data.Country}\n" +
             $"Barcode: {data.Barcode}\n" +
             $"Rel Date: {data.ReleaseDate}\n" +
-            $"Discs: {data.Discs}  Tracks: {data.Tracks}";
+            $"Discs: {data.Discs}  Tracks: {data.Tracks}\n" +
+            $"FreeDB ID: {data.DiscId}\n" +
+            $"MB DiscID: {data.MusicBrainzDiscId}";
     }
 
     private void UpdateFilePreview()

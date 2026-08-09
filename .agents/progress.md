@@ -71,6 +71,21 @@
 ### [2026-08-09 21:10] Format Discs and Tracks in One Line
 - Updated [`UI/MainWindow.cs`](file:///D:/git/CueComplete/UI/MainWindow.cs) in `UpdateDetailsView` to render `Discs` and `Tracks` on a single line (`Discs: {data.Discs}  Tracks: {data.Tracks}`).
 
+### [2026-08-09 21:26] Support MusicBrainz Disc ID Calculation and Search Lookup
+- Added [`Core/DiscIdCalculator.cs`](file:///D:/git/CueComplete/Core/DiscIdCalculator.cs) to calculate 28-character Base64 SHA-1 MusicBrainz Disc ID and 8-character hex FreeDB ID from CUE sheet track offsets.
+- Added `MusicBrainzDiscId` property to [`Core/Models.cs`](file:///D:/git/CueComplete/Core/Models.cs).
+- Updated [`Core/CueFileParser.cs`](file:///D:/git/CueComplete/Core/CueFileParser.cs) to parse `INDEX 01` track offsets and `REM MUSICBRAINZ_DISCID` header tags.
+- Updated [`Core/Metadata/MusicBrainzProvider.cs`](file:///D:/git/CueComplete/Core/Metadata/MusicBrainzProvider.cs) to perform direct MusicBrainz DiscID lookup via `LookupDiscIdAsync` alongside FreeDB lookups.
+- Added unit test `Test_ParseJoanJettCue_CalculatesMusicBrainzDiscIdAndFreeDbId` in [`CueComplete.Tests/DiscIdCalculatorTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/DiscIdCalculatorTests.cs) asserting exact expected MusicBrainz Disc ID (`0vHsFsZvLZHNcsI1CReFp0jgFsc-`) and FreeDB ID (`F50B8A10`) for `Joan Jett - Bad Reputation (VICP-5173).flac (faulty barcode).cue` (17/17 tests passing).
+
+### [2026-08-09 21:42] Fallback Search Query for MusicBrainz DiscID Index
+- Added fallback Lucene query (`discid:"<discid>" OR cdtoc:"<discid>"`) via `_mbClient.FindReleasesAsync` in [`Core/Metadata/MusicBrainzProvider.cs`](file:///D:/git/CueComplete/Core/Metadata/MusicBrainzProvider.cs) when direct `/discid/{discid}` API lookup yields no direct matches.
+
+
+
+
+
+
 
 
 

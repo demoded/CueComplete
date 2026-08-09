@@ -17,6 +17,8 @@ public class CueFileParser
         data.OriginalLines = File.ReadAllLines(filePath, encoding).ToList();
         
         bool inTrack = false;
+        int currentTrackNum = 0;
+        var trackOffsets = new List<TrackOffset>();
 
         foreach (var line in data.OriginalLines)
         {
@@ -31,6 +33,33 @@ public class CueFileParser
             {
                 inTrack = true;
                 data.Tracks = (data.Tracks ?? 0) + 1;
+                var parts = trimmedLine.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length >= 2 && int.TryParse(parts[1], out int tNum))
+                {
+                    currentTrackNum = tNum;
+                }
+                else
+                {
+                    currentTrackNum++;
+                }
+            }
+            else if (trimmedLine.StartsWith("INDEX 01", StringComparison.OrdinalIgnoreCase))
+            {
+                var timeStr = ExtractValue(trimmedLine, "INDEX 01") ?? trimmedLine.Substring("INDEX 01".Length).Trim();
+                var timeParts = timeStr.Split(':');
+                if (timeParts.Length == 3 &&
+                    int.TryParse(timeParts[0], out int mm) &&
+                    int.TryParse(timeParts[1], out int ss) &&
+                    int.TryParse(timeParts[2], out int ff))
+                {
+                    trackOffsets.Add(new TrackOffset
+                    {
+                        TrackNumber = currentTrackNum > 0 ? currentTrackNum : trackOffsets.Count + 1,
+                        Minutes = mm,
+                        Seconds = ss,
+                        Frames = ff
+                    });
+                }
             }
 
             if (!inTrack)
@@ -49,6 +78,7 @@ public class CueFileParser
                     data.Country = ExtractRemValue(trimmedLine, "COUNTRY") ?? data.Country;
                     data.ReleaseDate = ExtractRemValue(trimmedLine, "RELEASEDATE") ?? ExtractRemValue(trimmedLine, "RELEASE DATE") ?? data.ReleaseDate;
                     data.DiscId = ExtractRemValue(trimmedLine, "DISCID") ?? data.DiscId;
+                    data.MusicBrainzDiscId = ExtractRemValue(trimmedLine, "MUSICBRAINZ_DISCID") ?? ExtractRemValue(trimmedLine, "MUSICBRAINZ_RELEASEID") ?? ExtractRemValue(trimmedLine, "MBDISCID") ?? data.MusicBrainzDiscId;
                     data.Comment = ExtractRemValue(trimmedLine, "COMMENT") ?? data.Comment;
                     
                     var discNumberStr = ExtractRemValue(trimmedLine, "DISCNUMBER");
@@ -57,6 +87,34 @@ public class CueFileParser
                     var totalDiscsStr = ExtractRemValue(trimmedLine, "TOTALDISCS");
                     if (int.TryParse(totalDiscsStr, out int td)) data.Discs = td;
                 }
+            }
+        }
+
+        if (trackOffsets.Count > 0)
+        {
+            var lastTrack = trackOffsets[^1];
+            int leadOutSectors = lastTrack.TotalSectors + (2 * 60 * 75);
+            int leadOutSeconds = lastTrack.TotalSeconds + 120;
+
+            if (!string.IsNullOrWhiteSpace(data.DiscId) && data.DiscId.Length == 8)
+            {
+                try
+                {
+                    int freedbSeconds = Convert.ToInt32(data.DiscId.Substring(2, 4), 16);
+                    leadOutSeconds = freedbSeconds + trackOffsets[0].TotalSeconds + 2;
+                    leadOutSectors = (freedbSeconds + 2) * 75 + trackOffsets[0].Frames + 2;
+                }
+                catch { }
+            }
+
+            if (string.IsNullOrWhiteSpace(data.DiscId))
+            {
+                data.DiscId = DiscIdCalculator.CalculateFreeDbId(trackOffsets, leadOutSeconds);
+            }
+
+            if (string.IsNullOrWhiteSpace(data.MusicBrainzDiscId))
+            {
+                data.MusicBrainzDiscId = DiscIdCalculator.CalculateMusicBrainzDiscId(trackOffsets, leadOutSectors);
             }
         }
 
