@@ -105,6 +105,21 @@ public class DiscogsProvider : IMetadataProvider
             await PerformDiscogsTextSearchAsync(query, sourceData, list);
         }
 
+        if (list.Count > 0 && !string.IsNullOrWhiteSpace(sourceData.Artist))
+        {
+            var targetArtistLower = sourceData.Artist.Trim().ToLowerInvariant();
+            var filtered = list.Where(d =>
+                !string.IsNullOrWhiteSpace(d.Artist) &&
+                (d.Artist.ToLowerInvariant().Contains(targetArtistLower) || targetArtistLower.Contains(d.Artist.ToLowerInvariant()))
+            ).ToList();
+
+            if (filtered.Count < list.Count)
+            {
+                Log($"Filtered Discogs search results by artist '{sourceData.Artist}': count changed from {list.Count} to {filtered.Count}");
+                list = filtered;
+            }
+        }
+
         return list;
     }
 
@@ -191,6 +206,22 @@ public class DiscogsProvider : IMetadataProvider
         }
 
         await Task.WhenAll(tasks);
+
+        if (!string.IsNullOrWhiteSpace(sourceData.Artist))
+        {
+            var targetArtistLower = sourceData.Artist.Trim().ToLowerInvariant();
+            var filtered = list.Where(d =>
+                !string.IsNullOrWhiteSpace(d.Artist) &&
+                (d.Artist.ToLowerInvariant().Contains(targetArtistLower) || targetArtistLower.Contains(d.Artist.ToLowerInvariant()))
+            ).ToList();
+
+            if (filtered.Count < list.Count)
+            {
+                Log($"Filtered Discogs text search results by artist '{sourceData.Artist}': count changed from {list.Count} to {filtered.Count}");
+                list.Clear();
+                list.AddRange(filtered);
+            }
+        }
     }
 
     public async Task EnrichWithDiscogsReleaseIdAsync(CueData data, string discogsId)

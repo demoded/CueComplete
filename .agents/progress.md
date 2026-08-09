@@ -81,6 +81,21 @@
 ### [2026-08-09 21:42] Fallback Search Query for MusicBrainz DiscID Index
 - Added fallback Lucene query (`discid:"<discid>" OR cdtoc:"<discid>"`) via `_mbClient.FindReleasesAsync` in [`Core/Metadata/MusicBrainzProvider.cs`](file:///D:/git/CueComplete/Core/Metadata/MusicBrainzProvider.cs) when direct `/discid/{discid}` API lookup yields no direct matches.
 
+### [2026-08-09 21:51] Fix False Positive Releases in DiscID Search
+- Added Lucene special character escaping (`-`, `/`, etc.) to DiscID search query strings in [`Core/Metadata/MusicBrainzProvider.cs`](file:///D:/git/CueComplete/Core/Metadata/MusicBrainzProvider.cs).
+- Applied artist verification filtering to candidate results from DiscID searches, preventing false positive matches (such as "Stefan Wolf" audio dramas).
+
+### [2026-08-09 21:55] Add Artist Verification Filtering to Discogs Results
+- Added candidate artist verification filtering to `PerformDiscogsTextSearchAsync` and `SearchAsync` in [`Core/Metadata/DiscogsProvider.cs`](file:///D:/git/CueComplete/Core/Metadata/DiscogsProvider.cs) to eliminate false positive releases (such as "Daevid Allen" when searching for "Joan Jett").
+
+### [2026-08-09 21:58] Remove FreeDB ID and MB DiscID from Current Details View
+- Updated [`UI/MainWindow.cs`](file:///D:/git/CueComplete/UI/MainWindow.cs) in `UpdateDetailsView` to remove `FreeDB ID` and `MB DiscID` text fields from the UI pane.
+
+
+
+
+
+
 
 
 
