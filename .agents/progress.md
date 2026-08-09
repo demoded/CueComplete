@@ -91,6 +91,12 @@
 ### [2026-08-09 21:58] Remove FreeDB ID and MB DiscID from Current Details View
 - Updated [`UI/MainWindow.cs`](file:///D:/git/CueComplete/UI/MainWindow.cs) in `UpdateDetailsView` to remove `FreeDB ID` and `MB DiscID` text fields from the UI pane.
 
+### [2026-08-09 22:02] Minor Release v1.2.0
+- Updated version in [`CueComplete.csproj`](file:///D:/git/CueComplete/CueComplete.csproj) to `1.2.0`.
+- Merged `feature/ui-single-line-discs-tracks` into `master`.
+- Created and pushed git tag `v1.2.0` to trigger automated GitHub Actions release workflow.
+
+
 
 
 
