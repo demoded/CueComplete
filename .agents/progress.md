@@ -59,4 +59,10 @@
   - `PerformDiscogsTextSearchAsync` integration test verifying filtering of matrix/runout strings in search result candidate arrays.
 - All 14 tests passing cleanly via `dotnet test`.
 
+### [2026-08-09 14:23] Minor Release v1.1.0
+- Updated version in [`CueComplete.csproj`](file:///D:/git/CueComplete/CueComplete.csproj) to `1.1.0`.
+- Created and pushed git tag `v1.1.0` to trigger automated GitHub Actions release workflow.
+
+
+
 
