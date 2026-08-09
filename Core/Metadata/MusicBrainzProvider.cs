@@ -45,6 +45,100 @@ public class MusicBrainzProvider : IMetadataProvider
     {
         var list = new List<CueData>();
 
+        if (!string.IsNullOrWhiteSpace(sourceData.MusicBrainzDiscId))
+        {
+            Log($"Looking up MusicBrainz DiscID: {sourceData.MusicBrainzDiscId}");
+            try
+            {
+                var discResult = await _mbClient.LookupDiscIdAsync(sourceData.MusicBrainzDiscId);
+                if (discResult?.Releases != null)
+                {
+                    foreach (var rel in discResult.Releases.Take(10))
+                    {
+                        var release = rel;
+                        try
+                        {
+                            release = await _mbClient.LookupReleaseAsync(release.Id, Include.Labels | Include.Genres | Include.UrlRelationships | Include.Recordings);
+                        }
+                        catch { }
+
+                        var dto = MapToDto(release, sourceData.Artist);
+                        var data = dto.ToCueData();
+
+                        string? discogsReleaseId = ExtractDiscogsReleaseId(release);
+                        if (!string.IsNullOrWhiteSpace(discogsReleaseId))
+                        {
+                            data.DiscogsId = discogsReleaseId;
+                            Log($"Found Discogs link in MusicBrainz DiscID lookup: {discogsReleaseId}");
+                            if (discogsEnricher != null)
+                            {
+                                await discogsEnricher(data, discogsReleaseId);
+                            }
+                        }
+                        else if (!string.IsNullOrWhiteSpace(data.CatalogNumber) && discogsEnricher != null)
+                        {
+                            Log($"No Discogs link, trying to enrich via CatNo: {data.CatalogNumber}");
+                            await discogsEnricher(data, $"catno:{data.CatalogNumber}");
+                        }
+
+                        Log($"MusicBrainz match (DiscID): ID={release.Id}, Title={release.Title}, Date={release.Date}, Barcode={release.Barcode}");
+                        list.Add(data);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"MusicBrainz DiscID lookup error: {ex.Message}");
+            }
+
+            // Fallback: Search MusicBrainz index by discid/cdtoc if direct lookup returns no results or fails
+            if (list.Count == 0)
+            {
+                try
+                {
+                    Log($"Querying MusicBrainz search index for DiscID: {sourceData.MusicBrainzDiscId}");
+                    var discSearchResults = await _mbClient.FindReleasesAsync($"discid:\"{sourceData.MusicBrainzDiscId}\" OR cdtoc:\"{sourceData.MusicBrainzDiscId}\"", 5);
+                    if (discSearchResults?.Results != null)
+                    {
+                        foreach (var res in discSearchResults.Results)
+                        {
+                            var release = res.Item;
+                            try
+                            {
+                                release = await _mbClient.LookupReleaseAsync(release.Id, Include.Labels | Include.Genres | Include.UrlRelationships | Include.Recordings);
+                            }
+                            catch { }
+
+                            var dto = MapToDto(release, sourceData.Artist);
+                            var data = dto.ToCueData();
+
+                            string? discogsReleaseId = ExtractDiscogsReleaseId(release);
+                            if (!string.IsNullOrWhiteSpace(discogsReleaseId))
+                            {
+                                data.DiscogsId = discogsReleaseId;
+                                Log($"Found Discogs link in MusicBrainz DiscID search: {discogsReleaseId}");
+                                if (discogsEnricher != null) await discogsEnricher(data, discogsReleaseId);
+                            }
+                            else if (!string.IsNullOrWhiteSpace(data.CatalogNumber) && discogsEnricher != null)
+                            {
+                                Log($"No Discogs link, trying to enrich via CatNo: {data.CatalogNumber}");
+                                await discogsEnricher(data, $"catno:{data.CatalogNumber}");
+                            }
+
+                            Log($"MusicBrainz match (DiscID Search): ID={release.Id}, Title={release.Title}, Date={release.Date}, Barcode={release.Barcode}");
+                            list.Add(data);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log($"MusicBrainz DiscID search query error: {ex.Message}");
+                }
+            }
+
+            if (list.Count > 0) return list;
+        }
+
         if (!string.IsNullOrWhiteSpace(sourceData.DiscId))
         {
             Log($"Looking up FreeDB ID: {sourceData.DiscId}");

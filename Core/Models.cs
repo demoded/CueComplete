@@ -14,6 +14,7 @@ public class CueData
     public string? Barcode { get; set; }
     public string? ReleaseDate { get; set; }
     public string? DiscId { get; set; }
+    public string? MusicBrainzDiscId { get; set; }
     public string? DiscogsId { get; set; }
     public string? Source { get; set; }
     public int? Discs { get; set; }
