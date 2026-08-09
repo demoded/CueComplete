@@ -68,6 +68,11 @@
 - Updated [`.github/workflows/release.yml`](file:///D:/git/CueComplete/.github/workflows/release.yml) to explicitly target `CueComplete.csproj` during `dotnet publish`.
 - Re-tagged `v1.1.0` and pushed tag to GitHub.
 
+### [2026-08-09 21:10] Format Discs and Tracks in One Line
+- Updated [`UI/MainWindow.cs`](file:///D:/git/CueComplete/UI/MainWindow.cs) in `UpdateDetailsView` to render `Discs` and `Tracks` on a single line (`Discs: {data.Discs}  Tracks: {data.Tracks}`).
+
+
+
 
 
 
