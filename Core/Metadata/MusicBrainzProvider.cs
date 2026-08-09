@@ -96,8 +96,9 @@ public class MusicBrainzProvider : IMetadataProvider
             {
                 try
                 {
-                    Log($"Querying MusicBrainz search index for DiscID: {sourceData.MusicBrainzDiscId}");
-                    var discSearchResults = await _mbClient.FindReleasesAsync($"discid:\"{sourceData.MusicBrainzDiscId}\" OR cdtoc:\"{sourceData.MusicBrainzDiscId}\"", 5);
+                    string escapedDiscId = Regex.Replace(sourceData.MusicBrainzDiscId, @"([+\-&&||!(){}\[\]^""~*?:\\/])", @"\$1");
+                    Log($"Querying MusicBrainz search index for DiscID: {sourceData.MusicBrainzDiscId} (escaped: {escapedDiscId})");
+                    var discSearchResults = await _mbClient.FindReleasesAsync($"discid:{escapedDiscId} OR cdtoc:{escapedDiscId}", 5);
                     if (discSearchResults?.Results != null)
                     {
                         foreach (var res in discSearchResults.Results)
@@ -133,6 +134,22 @@ public class MusicBrainzProvider : IMetadataProvider
                 catch (Exception ex)
                 {
                     Log($"MusicBrainz DiscID search query error: {ex.Message}");
+                }
+            }
+
+            if (list.Count > 0 && !string.IsNullOrWhiteSpace(sourceData.Artist))
+            {
+                var artistStr = sourceData.Artist.ToLower();
+                var filteredList = list.Where(r => r.Artist != null && r.Artist.ToLower().Contains(artistStr)).ToList();
+                if (filteredList.Count > 0)
+                {
+                    Log($"Filtered DiscID MusicBrainz results by artist '{sourceData.Artist}': count changed from {list.Count} to {filteredList.Count}");
+                    list = filteredList;
+                }
+                else
+                {
+                    Log($"All DiscID MusicBrainz results filtered out by artist '{sourceData.Artist}'. Likely false positive matches.");
+                    list.Clear();
                 }
             }
 
