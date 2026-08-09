@@ -45,3 +45,9 @@
 ### [2026-08-09 10:31] Updated AGENTS.md Guidelines
 - Updated [`.agents/AGENTS.md`](file:///D:/git/CueComplete/.agents/AGENTS.md) to enforce storing plan files (`.agents/plan YYYYMMDDTHHMM.md`) and progress log (`.agents/progress.md`) in `.agents/`.
 - Converted all progress log entries to datetime-based headers.
+
+### [2026-08-09 12:14] Fix Barcode Extraction in DiscogsProvider
+- Fixed [`Core/Metadata/DiscogsProvider.cs`](file:///D:/git/CueComplete/Core/Metadata/DiscogsProvider.cs) to ensure barcodes are extracted specifically from release identifiers with `Type == "Barcode"`.
+- Added `IsValidBarcodeCandidate` validation helper to filter out matrix, runout, SID, and rights society (JASRAC) strings.
+- Updated `FetchAndApplyDiscogsDataAsync` to always apply valid `Type == "Barcode"` identifiers from direct release objects.
+

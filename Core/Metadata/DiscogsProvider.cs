@@ -146,14 +146,10 @@ public class DiscogsProvider : IMetadataProvider
             {
                 foreach (var barcodeStr in item.Barcode)
                 {
-                    if (!string.IsNullOrWhiteSpace(barcodeStr))
+                    if (IsValidBarcodeCandidate(barcodeStr))
                     {
-                        var digitCount = barcodeStr.Count(char.IsDigit);
-                        if (digitCount >= 6 && !barcodeStr.Contains("JASRAC", StringComparison.OrdinalIgnoreCase))
-                        {
-                            data.Barcode = barcodeStr;
-                            break;
-                        }
+                        data.Barcode = barcodeStr;
+                        break;
                     }
                 }
             }
@@ -306,15 +302,16 @@ public class DiscogsProvider : IMetadataProvider
                 if (string.IsNullOrEmpty(data.Country) && !string.IsNullOrWhiteSpace(releaseObj.Country))
                     data.Country = releaseObj.Country;
 
-                if (string.IsNullOrEmpty(data.Barcode) && releaseObj.Identifiers != null)
+                if (releaseObj.Identifiers != null)
                 {
-                    foreach (var ident in releaseObj.Identifiers)
+                    var barcodeIdent = releaseObj.Identifiers.FirstOrDefault(ident =>
+                        string.Equals(ident.Type, "Barcode", StringComparison.OrdinalIgnoreCase) &&
+                        !string.IsNullOrWhiteSpace(ident.Value) &&
+                        IsValidBarcodeCandidate(ident.Value));
+
+                    if (barcodeIdent != null)
                     {
-                        if (ident.Type == "Barcode" && !string.IsNullOrWhiteSpace(ident.Value))
-                        {
-                            data.Barcode = ident.Value;
-                            break;
-                        }
+                        data.Barcode = barcodeIdent.Value;
                     }
                 }
             }
@@ -415,4 +412,29 @@ public class DiscogsProvider : IMetadataProvider
         if (string.IsNullOrWhiteSpace(input)) return input;
         return Regex.Replace(input, @" \(\d+\)$", "").Trim();
     }
+
+    public static bool IsValidBarcodeCandidate(string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return false;
+
+        if (input.Contains("Matrix", StringComparison.OrdinalIgnoreCase) ||
+            input.Contains("Runout", StringComparison.OrdinalIgnoreCase) ||
+            input.Contains("SID", StringComparison.OrdinalIgnoreCase) ||
+            input.Contains("IFPI", StringComparison.OrdinalIgnoreCase) ||
+            input.Contains("JASRAC", StringComparison.OrdinalIgnoreCase) ||
+            input.Contains("Mastering", StringComparison.OrdinalIgnoreCase) ||
+            input.Contains("Mould", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (!Regex.IsMatch(input, @"^[\d\s\-]+$"))
+        {
+            return false;
+        }
+
+        int digitCount = input.Count(char.IsDigit);
+        return digitCount >= 6;
+    }
 }
+
