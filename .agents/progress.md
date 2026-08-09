@@ -51,3 +51,12 @@
 - Added `IsValidBarcodeCandidate` validation helper to filter out matrix, runout, SID, and rights society (JASRAC) strings.
 - Updated `FetchAndApplyDiscogsDataAsync` to always apply valid `Type == "Barcode"` identifiers from direct release objects.
 
+### [2026-08-09 12:24] Integration & Unit Tests for Barcode Extraction
+- Created xUnit test project [`CueComplete.Tests/CueComplete.Tests.csproj`](file:///D:/git/CueComplete/CueComplete.Tests/CueComplete.Tests.csproj) referenced in [`CueComplete.slnx`](file:///D:/git/CueComplete/CueComplete.slnx).
+- Added [`CueComplete.Tests/BarcodeExtractionTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/BarcodeExtractionTests.cs) covering:
+  - `IsValidBarcodeCandidate` theory tests for valid EAN/UPC barcodes vs matrix, runout, SID, and JASRAC strings.
+  - `FetchAndApplyDiscogsDataAsync` integration test verifying that `Identifier.type == "Barcode"` overrides matrix/runout entries.
+  - `PerformDiscogsTextSearchAsync` integration test verifying filtering of matrix/runout strings in search result candidate arrays.
+- All 14 tests passing cleanly via `dotnet test`.
+
+

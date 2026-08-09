@@ -1,3 +1,5 @@
 <Solution>
   <Project Path="CueComplete.csproj" />
+  <Project Path="CueComplete.Tests/CueComplete.Tests.csproj" />
 </Solution>
+
