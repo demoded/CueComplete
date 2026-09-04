@@ -401,7 +401,7 @@ public class DiscogsProvider : IMetadataProvider
                         else
                         {
                             prefix = "Default";
-                            var match = Regex.Match(pos, @"^([a-zA-Z]+|\d+)");
+                            var match = Regex.Match(pos, @"^[a-zA-Z]+");
                             if (match.Success) prefix = match.Value;
                         }
 
@@ -446,6 +446,18 @@ public class DiscogsProvider : IMetadataProvider
                         discs += q;
                 }
                 if (discs > 0 && (!data.Discs.HasValue || data.Discs.Value <= 1)) data.Discs = discs;
+            }
+
+            if (data.Discs.HasValue)
+            {
+                if (data.Discs.Value == 1)
+                {
+                    data.DiscNumber = 1;
+                }
+                else if (data.DiscNumber.HasValue && data.DiscNumber.Value > data.Discs.Value)
+                {
+                    data.DiscNumber = 1;
+                }
             }
         }
         catch (Exception ex)

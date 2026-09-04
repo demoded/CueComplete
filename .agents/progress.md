@@ -123,6 +123,19 @@
 - Merged `fix/rem-date-validation` into `master`.
 - Created and pushed git tag `v1.2.1` to trigger automated GitHub Actions release workflow.
 
+### [2026-09-05 10:50] Fix False Positive DISCNUMBER from Catalog Numbers and Enforce Deserialized Values
+- Investigated `REM DISCNUMBER "33"` in `TestStubs/1994 - Blut [1994, Massacre, MASS CD 033, DE]/Atrocity - Blut.cue`.
+- Identified that `CueFileParser.cs` used a regex `\b(?:CD|Disc)\s*(\d+)` against the folder name, which erroneously matched `MASS CD 033` (the catalog number) as disc number 33.
+- Updated `CueFileParser.cs` to strip release metadata brackets (`\[.*\]`) containing commas before matching disc/CD patterns, and added checks against known catalog numbers.
+- Fixed tracklist position prefix logic in [`Core/Metadata/DiscogsProvider.cs`](file:///D:/git/CueComplete/Core/Metadata/DiscogsProvider.cs) so purely numeric track positions (`1`, `2`, ..., `15`) are grouped into a single disc rather than 15 separate prefixes.
+- Enforced in `DiscogsProvider.cs` that single-disc releases (`Discs == 1`) always set `DiscNumber = 1`.
+- Added `DiscNumber` to [`Core/Metadata/Models/MusicBrainzReleaseDto.cs`](file:///D:/git/CueComplete/Core/Metadata/Models/MusicBrainzReleaseDto.cs) and populated it from deserialized `release.Media` positions in [`Core/Metadata/MusicBrainzProvider.cs`](file:///D:/git/CueComplete/Core/Metadata/MusicBrainzProvider.cs).
+- Added sanity validation in [`UI/MainWindow.cs`](file:///D:/git/CueComplete/UI/MainWindow.cs) and [`Core/CueFileWriter.cs`](file:///D:/git/CueComplete/Core/CueFileWriter.cs) ensuring that `DiscNumber` is set to `1` whenever `Discs == 1` or if `DiscNumber > Discs`.
+- Corrected `REM DISCNUMBER "33"` to `REM DISCNUMBER "1"` in `TestStubs/1994 - Blut [1994, Massacre, MASS CD 033, DE]/Atrocity - Blut.cue`.
+- Added unit tests in [`CueComplete.Tests/DiscNumberTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/DiscNumberTests.cs) (all 42 tests passing).
+- Verified build and single-file publish via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
+
+
 
 
 

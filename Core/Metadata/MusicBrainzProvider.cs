@@ -62,7 +62,7 @@ public class MusicBrainzProvider : IMetadataProvider
                         }
                         catch { }
 
-                        var dto = MapToDto(release, sourceData.Artist);
+                        var dto = MapToDto(release, sourceData.Artist, sourceData);
                         var data = dto.ToCueData();
 
                         string? discogsReleaseId = ExtractDiscogsReleaseId(release);
@@ -110,7 +110,7 @@ public class MusicBrainzProvider : IMetadataProvider
                             }
                             catch { }
 
-                            var dto = MapToDto(release, sourceData.Artist);
+                            var dto = MapToDto(release, sourceData.Artist, sourceData);
                             var data = dto.ToCueData();
 
                             string? discogsReleaseId = ExtractDiscogsReleaseId(release);
@@ -166,7 +166,7 @@ public class MusicBrainzProvider : IMetadataProvider
                 try
                 {
                     var release = await _mbClient.LookupReleaseAsync(Guid.Parse(releaseId), Include.Labels | Include.Genres | Include.UrlRelationships | Include.Recordings);
-                    var dto = MapToDto(release, sourceData.Artist);
+                    var dto = MapToDto(release, sourceData.Artist, sourceData);
                     var data = dto.ToCueData();
 
                     string? discogsReleaseId = ExtractDiscogsReleaseId(release);
@@ -250,7 +250,7 @@ public class MusicBrainzProvider : IMetadataProvider
             }
             catch { /* Ignore lookup failure */ }
 
-            var dto = MapToDto(release, sourceData.Artist);
+            var dto = MapToDto(release, sourceData.Artist, sourceData);
             var data = dto.ToCueData();
 
             string? discogsReleaseId = ExtractDiscogsReleaseId(release);
@@ -302,7 +302,7 @@ public class MusicBrainzProvider : IMetadataProvider
         return result;
     }
 
-    private static MusicBrainzReleaseDto MapToDto(IRelease release, string? fallbackArtist)
+    private static MusicBrainzReleaseDto MapToDto(IRelease release, string? fallbackArtist, CueData? sourceData = null)
     {
         var dto = new MusicBrainzReleaseDto
         {
@@ -316,6 +316,22 @@ public class MusicBrainzProvider : IMetadataProvider
             Discs = release.Media?.Count,
             Tracks = release.Media?.Sum(m => m.TrackCount)
         };
+
+        if (release.Media != null && release.Media.Count > 0)
+        {
+            if (release.Media.Count == 1)
+            {
+                dto.DiscNumber = 1;
+            }
+            else if (sourceData != null && sourceData.Tracks.HasValue && sourceData.Tracks.Value > 0)
+            {
+                var matchedMedia = release.Media.Where(m => m.TrackCount == sourceData.Tracks.Value).ToList();
+                if (matchedMedia.Count == 1)
+                {
+                    dto.DiscNumber = matchedMedia[0].Position;
+                }
+            }
+        }
 
         if (release.LabelInfo != null && release.LabelInfo.Count > 0)
         {

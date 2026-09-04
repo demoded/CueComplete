@@ -281,6 +281,18 @@ public class MainWindow : Window
             _currentCueData.DiscNumber = selectedResult.DiscNumber ?? _currentCueData.DiscNumber;
             _currentCueData.Discs = selectedResult.Discs ?? _currentCueData.Discs;
 
+            if (_currentCueData.Discs.HasValue)
+            {
+                if (_currentCueData.Discs.Value == 1)
+                {
+                    _currentCueData.DiscNumber = 1;
+                }
+                else if (_currentCueData.DiscNumber.HasValue && _currentCueData.DiscNumber.Value > _currentCueData.Discs.Value)
+                {
+                    _currentCueData.DiscNumber = 1;
+                }
+            }
+
             var filePath = _cueFiles[_fileListView.SelectedItem];
             CueFileWriter.Save(filePath, _currentCueData);
 
