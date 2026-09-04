@@ -19,7 +19,7 @@ public class CueFileWriter
         var writtenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         // Define a helper to format fields
-        string FormatField(string key, string? value, bool isRem)
+        string? FormatField(string key, string? value, bool isRem)
         {
             if (string.IsNullOrWhiteSpace(value)) return null;
             if (isRem) return $"REM {key} \"{value}\"";
@@ -32,13 +32,17 @@ public class CueFileWriter
         {
             if (!string.IsNullOrWhiteSpace(value))
             {
-                newHeaders.Add(FormatField(key, value, isRem));
-                writtenKeys.Add(isRem ? "REM " + key : key);
+                var formatted = FormatField(key, value, isRem);
+                if (formatted != null)
+                {
+                    newHeaders.Add(formatted);
+                    writtenKeys.Add(isRem ? "REM " + key : key);
+                }
             }
         };
 
         addHeader("GENRE", updatedData.Genre, true);
-        addHeader("DATE", updatedData.Date, true);
+        addHeader("DATE", CueData.SanitizeYear(updatedData.Date) ?? CueData.SanitizeYear(updatedData.ReleaseDate), true);
         addHeader("LABEL", updatedData.Label, true);
         addHeader("CATALOGNUMBER", updatedData.CatalogNumber, true);
         addHeader("COUNTRY", updatedData.Country, true);

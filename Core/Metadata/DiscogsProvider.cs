@@ -95,7 +95,7 @@ public class DiscogsProvider : IMetadataProvider
         // 2. Fetch by Barcodes
         foreach (var barcode in barcodes)
         {
-            await PerformDiscogsTextSearchAsync(barcode, sourceData, list);
+            await PerformDiscogsBarcodeSearchAsync(barcode, sourceData, list);
         }
 
         // 3. Fallback to Text Search if nothing was found
@@ -123,11 +123,20 @@ public class DiscogsProvider : IMetadataProvider
         return list;
     }
 
-    public async Task PerformDiscogsTextSearchAsync(string query, CueData sourceData, List<CueData> list)
+    public Task PerformDiscogsTextSearchAsync(string query, CueData sourceData, List<CueData> list)
+        => PerformDiscogsSearchAsync("q", query, sourceData, list);
+
+    public Task PerformDiscogsCatNoSearchAsync(string catNo, CueData sourceData, List<CueData> list)
+        => PerformDiscogsSearchAsync("catno", catNo, sourceData, list);
+
+    public Task PerformDiscogsBarcodeSearchAsync(string barcode, CueData sourceData, List<CueData> list)
+        => PerformDiscogsSearchAsync("barcode", barcode, sourceData, list);
+
+    public async Task PerformDiscogsSearchAsync(string paramName, string query, CueData sourceData, List<CueData> list)
     {
         if (string.IsNullOrWhiteSpace(query)) return;
 
-        var url = $"https://api.discogs.com/database/search?q={HttpUtility.UrlEncode(query)}&type=release";
+        var url = $"https://api.discogs.com/database/search?{paramName}={HttpUtility.UrlEncode(query)}&type=release";
         Log($"Discogs query URL: {url}");
 
         var request = new HttpRequestMessage(HttpMethod.Get, url);
@@ -174,6 +183,9 @@ public class DiscogsProvider : IMetadataProvider
 
             if (!string.IsNullOrWhiteSpace(item.Country))
                 data.Country = item.Country;
+
+            if (item.Year != null)
+                data.Date = item.Year.ToString();
 
             if (item.Label != null && item.Label.Count > 0)
                 data.Label = CleanDiscogsString(item.Label[0]);
@@ -278,6 +290,10 @@ public class DiscogsProvider : IMetadataProvider
             if (isDirectReleaseUrl && !string.IsNullOrWhiteSpace(releaseObj.Released))
             {
                 data.ReleaseDate = releaseObj.Released ?? data.ReleaseDate;
+                if (string.IsNullOrWhiteSpace(data.Date))
+                {
+                    data.Date = releaseObj.Released;
+                }
             }
 
             // Master URL Year resolution

@@ -87,9 +87,40 @@ public class BarcodeExtractionTests
         Assert.Equal("075992388422", results[0].Barcode);
     }
 
+    [Fact]
+    public async Task Test_PerformDiscogsCatNoSearchAsync_UsesCatNoQueryParameter()
+    {
+        var searchJson = @"{ ""results"": [] }";
+        var handler = new MockHttpMessageHandler(searchJson);
+        var httpClient = new HttpClient(handler);
+        var provider = new DiscogsProvider("key", "secret", "token", httpClient);
+        var results = new List<CueData>();
+
+        await provider.PerformDiscogsCatNoSearchAsync("CD-US 14", new CueData { Artist = "Destiny" }, results);
+
+        Assert.NotNull(handler.LastRequestUri);
+        Assert.Contains("catno=CD-US+14", handler.LastRequestUri.ToString());
+    }
+
+    [Fact]
+    public async Task Test_PerformDiscogsBarcodeSearchAsync_UsesBarcodeQueryParameter()
+    {
+        var searchJson = @"{ ""results"": [] }";
+        var handler = new MockHttpMessageHandler(searchJson);
+        var httpClient = new HttpClient(handler);
+        var provider = new DiscogsProvider("key", "secret", "token", httpClient);
+        var results = new List<CueData>();
+
+        await provider.PerformDiscogsBarcodeSearchAsync("075992388422", new CueData { Artist = "Joan Jett" }, results);
+
+        Assert.NotNull(handler.LastRequestUri);
+        Assert.Contains("barcode=075992388422", handler.LastRequestUri.ToString());
+    }
+
     private class MockHttpMessageHandler : HttpMessageHandler
     {
         private readonly string _responseContent;
+        public Uri? LastRequestUri { get; private set; }
 
         public MockHttpMessageHandler(string responseContent)
         {
@@ -98,6 +129,7 @@ public class BarcodeExtractionTests
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            LastRequestUri = request.RequestUri;
             var response = new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent(_responseContent)
