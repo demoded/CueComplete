@@ -131,6 +131,12 @@
 - Added unit tests in [`CueComplete.Tests/MainWindowTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/MainWindowTests.cs) verifying counter calculation across list items and empty list state (41/41 tests passing).
 - Verified build and single-file executable packaging via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
 
+### [2026-09-05 09:34] Branch & Pull Request Creation
+- Created branch `feat/cue-files-counter`.
+- Committed changes with message `feat(ui): add [current\total] file counter to CUE Files pane`.
+- Pushed branch to `origin/feat/cue-files-counter`.
+- Created pull request [#5](https://github.com/demoded/CueComplete/pull/5) targeting `master`.
+
 
 
 
