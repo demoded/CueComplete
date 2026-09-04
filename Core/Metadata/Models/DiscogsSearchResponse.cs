@@ -22,6 +22,9 @@ public class DiscogsSearchResult
     [JsonPropertyName("country")]
     public string? Country { get; set; }
 
+    [JsonPropertyName("year")]
+    public object? Year { get; set; }
+
     [JsonPropertyName("label")]
     public List<string>? Label { get; set; }
 

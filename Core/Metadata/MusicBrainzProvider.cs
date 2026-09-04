@@ -310,7 +310,7 @@ public class MusicBrainzProvider : IMetadataProvider
             Artist = release.ArtistCredit?.FirstOrDefault()?.Name ?? fallbackArtist,
             Album = release.Title,
             Barcode = release.Barcode,
-            Date = release.Date?.ToString(),
+            Date = CueData.SanitizeYear(release.Date?.ToString()),
             ReleaseDate = release.Date?.ToString(),
             Country = release.Country,
             Discs = release.Media?.Count,

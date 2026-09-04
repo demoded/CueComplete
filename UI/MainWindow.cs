@@ -225,6 +225,10 @@ public class MainWindow : Window
             {
                 results = await _metadataService.SearchReleasesAsync(_currentCueData, deepSearch);
             }
+            catch (Exception ex)
+            {
+                _metadataService.Log($"Search failed with unexpected error: {ex}");
+            }
             finally
             {
                 Application.MainLoop.Invoke(() => 

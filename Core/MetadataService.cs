@@ -17,12 +17,16 @@ public class MetadataService
     }
 
     public static bool IsLoggingEnabled { get; set; } = false;
+    private static readonly object _logLock = new();
 
-    private void Log(string message)
+    public void Log(string message)
     {
         if (IsLoggingEnabled)
         {
-            try { System.IO.File.AppendAllText("app.log", $"[{DateTime.Now:O}] {message}\n"); } catch { }
+            lock (_logLock)
+            {
+                try { System.IO.File.AppendAllText("app.log", $"[{DateTime.Now:O}] {message}\n"); } catch { }
+            }
         }
         OnLog?.Invoke(message);
     }
@@ -48,7 +52,7 @@ public class MetadataService
                 try
                 {
                     Log($"Fast search for Catalog Number: {sourceData.CatalogNumber}");
-                    await _discogsProvider.PerformDiscogsTextSearchAsync(sourceData.CatalogNumber!, sourceData, results);
+                    await _discogsProvider.PerformDiscogsCatNoSearchAsync(sourceData.CatalogNumber!, sourceData, results);
                 }
                 catch (Exception ex)
                 {
@@ -60,7 +64,7 @@ public class MetadataService
                 try
                 {
                     Log($"Fast search for Barcode: {sourceData.Barcode}");
-                    await _discogsProvider.PerformDiscogsTextSearchAsync(sourceData.Barcode!, sourceData, results);
+                    await _discogsProvider.PerformDiscogsBarcodeSearchAsync(sourceData.Barcode!, sourceData, results);
                 }
                 catch (Exception ex)
                 {
@@ -84,7 +88,7 @@ public class MetadataService
             try
             {
                 Log($"Prioritized Discogs search for Catalog Number: {sourceData.CatalogNumber}");
-                await _discogsProvider.PerformDiscogsTextSearchAsync(sourceData.CatalogNumber!, sourceData, results);
+                await _discogsProvider.PerformDiscogsCatNoSearchAsync(sourceData.CatalogNumber!, sourceData, results);
             }
             catch (Exception ex)
             {
