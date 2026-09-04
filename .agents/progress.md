@@ -135,6 +135,12 @@
 - Added unit tests in [`CueComplete.Tests/DiscNumberTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/DiscNumberTests.cs) (all 42 tests passing).
 - Verified build and single-file publish via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
 
+### [2026-09-05 10:57] Branch & Pull Request Creation
+- Created branch `fix/disc-number-validation`.
+- Committed changes with message `fix(metadata): prevent catalog numbers matching as disc number and enforce deserialized disc numbers`.
+- Pushed branch to `origin/fix/disc-number-validation`.
+- Created pull request [#6](https://github.com/demoded/CueComplete/pull/6) targeting `master`.
+
 
 
 
