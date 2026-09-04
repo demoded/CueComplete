@@ -118,6 +118,12 @@
 - Added unit tests in [`CueComplete.Tests/BarcodeExtractionTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/BarcodeExtractionTests.cs) verifying `catno=` and `barcode=` parameters in outgoing HTTP requests.
 - All 39 tests passing via `dotnet test`; built and published release binary via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
 
+### [2026-09-04 21:53] Patch Release v1.2.1
+- Updated version in [`CueComplete.csproj`](file:///D:/git/CueComplete/CueComplete.csproj) to `1.2.1`.
+- Merged `fix/rem-date-validation` into `master`.
+- Created and pushed git tag `v1.2.1` to trigger automated GitHub Actions release workflow.
+
+
 
 
 
