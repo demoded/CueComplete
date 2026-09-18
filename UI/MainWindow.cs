@@ -9,9 +9,13 @@ public class MainWindow : Window
     private readonly MetadataService _metadataService;
     private readonly List<string> _cueFiles;
     
+    private FrameView _leftPane;
     private ListView _fileListView;
     private TextView _detailsTextView;
     private ListView _resultsListView;
+
+    public string LeftPaneTitle => _leftPane?.Title?.ToString() ?? string.Empty;
+    public ListView FileListView => _fileListView;
     
     private CueData? _currentCueData;
     private List<CueData> _searchResults = new();
@@ -22,7 +26,7 @@ public class MainWindow : Window
         _metadataService = metadataService;
         _cueFiles = cueFiles;
 
-        var leftPane = new FrameView("CUE Files")
+        _leftPane = new FrameView("CUE Files")
         {
             X = 0,
             Y = 0,
@@ -44,13 +48,21 @@ public class MainWindow : Window
             AllowsMarking = false
         };
         _fileListView.OpenSelectedItem += FileListView_OpenSelectedItem;
-        _fileListView.SelectedItemChanged += (e) => { if (_fileListView.HasFocus) UpdateFilePreview(); };
-        _fileListView.Enter += (e) => UpdateFilePreview();
-        leftPane.Add(_fileListView);
+        _fileListView.SelectedItemChanged += (e) => {
+            UpdateLeftPaneTitle();
+            if (_fileListView.HasFocus) UpdateFilePreview();
+        };
+        _fileListView.Enter += (e) => {
+            UpdateLeftPaneTitle();
+            UpdateFilePreview();
+        };
+        _leftPane.Add(_fileListView);
+
+        UpdateLeftPaneTitle();
 
         var rightPaneTop = new FrameView("Current Details")
         {
-            X = Pos.Right(leftPane),
+            X = Pos.Right(_leftPane),
             Y = 0,
             Width = Dim.Fill(),
             Height = Dim.Percent(40) + 3
@@ -69,7 +81,7 @@ public class MainWindow : Window
 
         var rightPaneBottom = new FrameView("Search Results (Press Enter to Apply, 's' for Deep Search)")
         {
-            X = Pos.Right(leftPane),
+            X = Pos.Right(_leftPane),
             Y = Pos.Bottom(rightPaneTop),
             Width = Dim.Fill(),
             Height = Dim.Fill()
@@ -116,7 +128,7 @@ public class MainWindow : Window
             return false;
         };
 
-        Add(leftPane, rightPaneTop, rightPaneBottom, statusBar);
+        Add(_leftPane, rightPaneTop, rightPaneBottom, statusBar);
 
         if (_cueFiles.Count > 0)
         {
@@ -154,8 +166,27 @@ public class MainWindow : Window
             $"Discs: {data.Discs}  Tracks: {data.Tracks}";
     }
 
+    private void UpdateLeftPaneTitle()
+    {
+        int current = 0;
+        if (_cueFiles.Count > 0)
+        {
+            if (_fileListView != null && _fileListView.SelectedItem >= 0)
+            {
+                current = Math.Min(_fileListView.SelectedItem + 1, _cueFiles.Count);
+            }
+            else
+            {
+                current = 1;
+            }
+        }
+        _leftPane.Title = $"CUE Files [{current}\\{_cueFiles.Count}]";
+        _leftPane.SetNeedsDisplay();
+    }
+
     private void UpdateFilePreview()
     {
+        UpdateLeftPaneTitle();
         if (_fileListView.SelectedItem >= 0 && _fileListView.SelectedItem < _cueFiles.Count)
         {
             var filePath = _cueFiles[_fileListView.SelectedItem];
@@ -189,6 +220,7 @@ public class MainWindow : Window
     private void LoadCueFile(string filePath, bool deepSearch = false)
     {
         _fileListView.SetFocus();
+        UpdateLeftPaneTitle();
         _currentCueData = CueFileParser.Parse(filePath);
         
         var folderName = Path.GetFileName(Path.GetDirectoryName(filePath));
