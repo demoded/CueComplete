@@ -140,25 +140,39 @@ public class CueFileParser
 
             if (!data.DiscNumber.HasValue)
             {
-                var match = Regex.Match(fileName, @"\b(?:CD|Disc)\s*(\d+)", RegexOptions.IgnoreCase);
+                var match = Regex.Match(fileName, @"\b(?:CD|Disc)\s*(\d+)\b", RegexOptions.IgnoreCase);
                 if (match.Success && int.TryParse(match.Groups[1].Value, out int dn))
                 {
                     data.DiscNumber = dn;
                 }
             }
 
+            // Strip trailing release metadata bracket (e.g. "[1994, Massacre, MASS CD 033, DE]")
+            // so catalog numbers like "MASS CD 033" are not mistakenly parsed as disc numbers
+            string folderCleanForDiscs = folderName;
+            var metaMatch = Regex.Match(folderName, @"\[([^\]]+)\][^\[\]]*$");
+            if (metaMatch.Success && metaMatch.Groups[1].Value.Contains(','))
+            {
+                folderCleanForDiscs = folderName.Substring(0, metaMatch.Index).Trim();
+            }
+
             if (!data.DiscNumber.HasValue)
             {
-                var match = Regex.Match(folderName, @"\b(?:CD|Disc)\s*(\d+)", RegexOptions.IgnoreCase);
+                var match = Regex.Match(folderCleanForDiscs, @"\b(?:CD|Disc)\s*(\d+)\b", RegexOptions.IgnoreCase);
                 if (match.Success && int.TryParse(match.Groups[1].Value, out int dn))
                 {
-                    data.DiscNumber = dn;
+                    bool isCatNoMatch = !string.IsNullOrWhiteSpace(data.CatalogNumber) &&
+                        Regex.IsMatch(data.CatalogNumber, $@"\b(?:CD|Disc)?\s*0*{dn}\b", RegexOptions.IgnoreCase);
+                    if (!isCatNoMatch)
+                    {
+                        data.DiscNumber = dn;
+                    }
                 }
             }
 
             if (!data.Discs.HasValue)
             {
-                var match = Regex.Match(folderName, @"(\d+)\s*CD\b", RegexOptions.IgnoreCase);
+                var match = Regex.Match(folderCleanForDiscs, @"\b(\d+)\s*CD\b", RegexOptions.IgnoreCase);
                 if (match.Success && int.TryParse(match.Groups[1].Value, out int td))
                 {
                     data.Discs = td;

@@ -10,6 +10,7 @@ public class MusicBrainzReleaseDto
     public string? ReleaseDate { get; set; }
     public string? Country { get; set; }
     public int? Discs { get; set; }
+    public int? DiscNumber { get; set; }
     public int? Tracks { get; set; }
     public string? Label { get; set; }
     public string? CatalogNumber { get; set; }
@@ -28,6 +29,7 @@ public class MusicBrainzReleaseDto
             ReleaseDate = ReleaseDate,
             Country = Country,
             Discs = Discs,
+            DiscNumber = DiscNumber,
             Tracks = Tracks,
             Label = Label,
             CatalogNumber = CatalogNumber,
