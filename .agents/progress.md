@@ -123,6 +123,20 @@
 - Merged `fix/rem-date-validation` into `master`.
 - Created and pushed git tag `v1.2.1` to trigger automated GitHub Actions release workflow.
 
+### [2026-09-05 09:27] Add File Counter to CUE Files Pane
+- Promoted `_leftPane` from a local variable in [`UI/MainWindow.cs`](file:///D:/git/CueComplete/UI/MainWindow.cs) to a class field.
+- Added `UpdateLeftPaneTitle()` method in [`UI/MainWindow.cs`](file:///D:/git/CueComplete/UI/MainWindow.cs) to format the frame title as `CUE Files [{current}\{total}]`.
+- Hooked `UpdateLeftPaneTitle()` into `MainWindow` initialization, `_fileListView.SelectedItemChanged`, `_fileListView.Enter`, `UpdateFilePreview()`, `LoadCueFile()`, and `ResultsListView_OpenSelectedItem()`.
+- Exposed `LeftPaneTitle` and `FileListView` properties on `MainWindow` for inspection and testing.
+- Added unit tests in [`CueComplete.Tests/MainWindowTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/MainWindowTests.cs) verifying counter calculation across list items and empty list state (41/41 tests passing).
+- Verified build and single-file executable packaging via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
+
+### [2026-09-05 09:34] Branch & Pull Request Creation
+- Created branch `feat/cue-files-counter`.
+- Committed changes with message `feat(ui): add [current\total] file counter to CUE Files pane`.
+- Pushed branch to `origin/feat/cue-files-counter`.
+- Created pull request [#5](https://github.com/demoded/CueComplete/pull/5) targeting `master`.
+
 ### [2026-09-05 10:50] Fix False Positive DISCNUMBER from Catalog Numbers and Enforce Deserialized Values
 - Investigated `REM DISCNUMBER "33"` in `TestStubs/1994 - Blut [1994, Massacre, MASS CD 033, DE]/Atrocity - Blut.cue`.
 - Identified that `CueFileParser.cs` used a regex `\b(?:CD|Disc)\s*(\d+)` against the folder name, which erroneously matched `MASS CD 033` (the catalog number) as disc number 33.
@@ -141,24 +155,4 @@
 - Pushed branch to `origin/fix/disc-number-validation`.
 - Created pull request [#6](https://github.com/demoded/CueComplete/pull/6) targeting `master`.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+=======
