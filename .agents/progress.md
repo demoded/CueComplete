@@ -203,4 +203,4 @@
 - Created branch `feat/new-ui-layout`.
 - Committed changes with message `feat(ui): update application layout with split panes and metadata comparison`.
 - Pushed branch to `origin/feat/new-ui-layout`.
-- Created pull request targeting `master`.
+- Created pull request [#8](https://github.com/demoded/CueComplete/pull/8) targeting `master`.
