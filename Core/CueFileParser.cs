@@ -66,7 +66,11 @@ public class CueFileParser
             {
                 data.Artist = ExtractValue(trimmedLine, "PERFORMER") ?? data.Artist;
                 data.Album = ExtractValue(trimmedLine, "TITLE") ?? data.Album;
-                data.Barcode = ExtractValue(trimmedLine, "CATALOG") ?? data.Barcode;
+                var catalogVal = ExtractValue(trimmedLine, "CATALOG");
+                if (!string.IsNullOrWhiteSpace(catalogVal) && Metadata.DiscogsProvider.IsValidBarcodeCandidate(catalogVal))
+                {
+                    data.Barcode = catalogVal;
+                }
                 
                 // REM fields
                 if (trimmedLine.StartsWith("REM", StringComparison.OrdinalIgnoreCase))
@@ -121,9 +125,14 @@ public class CueFileParser
         var folderName = Path.GetFileName(Path.GetDirectoryName(filePath));
         if (!string.IsNullOrWhiteSpace(folderName))
         {
-            if (string.IsNullOrWhiteSpace(data.CatalogNumber))
+            if (string.IsNullOrWhiteSpace(data.CatalogNumber) && !string.IsNullOrWhiteSpace(folderName))
             {
                 data.CatalogNumber = ExtractCatalogNumberFromFolderName(folderName);
+            }
+
+            if (string.IsNullOrWhiteSpace(data.Country) && !string.IsNullOrWhiteSpace(folderName))
+            {
+                data.Country = ExtractCountryFromFolderName(folderName);
             }
 
             var fileName = Path.GetFileNameWithoutExtension(filePath);
@@ -204,6 +213,16 @@ public class CueFileParser
         }
 
         return parts.Last();
+    }
+
+    private static string? ExtractCountryFromFolderName(string folderName)
+    {
+        var match = Regex.Match(folderName, @"\[([^\]]+)\][^\[\]]*$");
+        if (!match.Success) return null;
+
+        var content = match.Groups[1].Value;
+        var parts = content.Split(',').Select(p => p.Trim()).ToList();
+        return parts.FirstOrDefault(p => Regex.IsMatch(p, @"^[A-Z]{2,3}$", RegexOptions.IgnoreCase));
     }
 
     private static string? ExtractValue(string line, string key)

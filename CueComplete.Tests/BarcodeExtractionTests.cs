@@ -19,6 +19,8 @@ public class BarcodeExtractionTests
     [InlineData("Mould SID Code: IFPI 94K2", false)]
     [InlineData("JASRAC R-123456", false)]
     [InlineData("Short12", false)]
+    [InlineData("0000000000000", false)]
+    [InlineData("0000 0000 0000", false)]
     [InlineData("", false)]
     [InlineData(null, false)]
     public void Test_IsValidBarcodeCandidate(string? input, bool expected)
@@ -115,6 +117,30 @@ public class BarcodeExtractionTests
 
         Assert.NotNull(handler.LastRequestUri);
         Assert.Contains("barcode=075992388422", handler.LastRequestUri.ToString());
+    }
+
+    [Fact]
+    public void Test_CueFileParser_IgnoresDummyAllZeroCatalog()
+    {
+        var tempFile = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(tempFile, """
+            PERFORMER "Flotsam & Jetsam"
+            TITLE "Saturday Night's All Right For Fighting"
+            CATALOG 0000000000000
+            FILE "audio.flac" WAVE
+              TRACK 01 AUDIO
+                INDEX 01 00:00:00
+            """);
+
+            var data = CueFileParser.Parse(tempFile);
+            Assert.Null(data.Barcode);
+        }
+        finally
+        {
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+        }
     }
 
     private class MockHttpMessageHandler : HttpMessageHandler

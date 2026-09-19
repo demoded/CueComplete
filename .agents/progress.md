@@ -235,7 +235,29 @@
 - Updated version in [`CueComplete.csproj`](file:///D:/git/CueComplete/CueComplete.csproj) to `1.3.0`.
 - Verified all 72 unit tests pass via `dotnet test`.
 - Packaged single-file release executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
-- Created and pushed git tag `v1.3.0` to trigger automated GitHub Actions release workflow.
+### [2026-09-20 10:20] Fix MusicBrainz Artist Credit Resolution and Filter Dummy Barcodes
+- Drafted plan in [`.agents/plan 20260920T1010.md`](file:///D:/git/CueComplete/.agents/plan%2020260920T1010.md).
+- Added `Include.ArtistCredits | Include.DiscIds` to all `LookupReleaseAsync` calls in [`Core/Metadata/MusicBrainzProvider.cs`](file:///D:/git/CueComplete/Core/Metadata/MusicBrainzProvider.cs) to ensure release artist credits are populated instead of erroneously falling back to `sourceData.Artist`.
+- Added validation for fallback DiscID search matches in [`Core/Metadata/MusicBrainzProvider.cs`](file:///D:/git/CueComplete/Core/Metadata/MusicBrainzProvider.cs) to verify that a release actually contains the DiscID in its media discs, or that both the artist and track count match the CUE data before accepting it.
+- Updated `IsValidBarcodeCandidate` in [`Core/Metadata/DiscogsProvider.cs`](file:///D:/git/CueComplete/Core/Metadata/DiscogsProvider.cs) to reject all-zero dummy barcodes (e.g. `CATALOG 0000000000000`).
+- Updated [`Core/CueFileParser.cs`](file:///D:/git/CueComplete/Core/CueFileParser.cs) and [`Core/MetadataService.cs`](file:///D:/git/CueComplete/Core/MetadataService.cs) to validate `CATALOG` / `Barcode` with `IsValidBarcodeCandidate`, preventing dummy barcodes from suppressing artist/album search queries.
+- Updated text search results in [`Core/Metadata/MusicBrainzProvider.cs`](file:///D:/git/CueComplete/Core/Metadata/MusicBrainzProvider.cs) to prioritize releases matching the target catalog number and track count.
+- Added unit tests in [`CueComplete.Tests/BarcodeExtractionTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/BarcodeExtractionTests.cs) and [`CueComplete.Tests/MetadataValidationTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/MetadataValidationTests.cs) (78/78 tests passing).
+- Verified `dotnet test` and published single executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
 
-
-
+### [2026-09-20 10:35] Support Annotated Titles, MusicBrainz CatNo Search, and Artist '&' Normalization
+- Drafted plan in [`.agents/plan 20260920T1031.md`](file:///D:/git/CueComplete/.agents/plan%2020260920T1031.md).
+- Added `StripTitleAnnotations(string? title)` to [`Core/StringExtensions.cs`](file:///D:/git/CueComplete/Core/StringExtensions.cs) to strip trailing annotations like `(Japan)`, `[Deluxe Edition]`, `(Remastered)`, while preserving non-annotated titles (e.g. `(Untitled)`).
+- Updated `MatchesArtist` in [`Core/StringExtensions.cs`](file:///D:/git/CueComplete/Core/StringExtensions.cs) to normalize ` & ` and ` and ` (as well as `+`) so that artist names like `Flotsam & Jetsam` match `Flotsam and Jetsam`.
+- Added `MatchesCountry` and `MatchesSourceCountry` in [`Core/StringExtensions.cs`](file:///D:/git/CueComplete/Core/StringExtensions.cs) mapping country aliases (e.g. `JP` <-> `Japan`, `US` <-> `United States`, `UK` <-> `GB`, `XE` <-> `Europe`, `DE` <-> `Germany`) and matching release countries against source country or album title annotations.
+- Updated [`Core/Metadata/MusicBrainzProvider.cs`](file:///D:/git/CueComplete/Core/Metadata/MusicBrainzProvider.cs):
+  - Added catalog number query support (`catno:"..."` / `artist:"..." AND catno:"..."`) when barcode is absent.
+  - Added stripped title annotation fallback when exact `artist:"..." AND release:"..."` query returns 0 results.
+  - Added country match scoring bonus (+15 points) when ranking MusicBrainz results.
+- Updated [`Core/Metadata/DiscogsProvider.cs`](file:///D:/git/CueComplete/Core/Metadata/DiscogsProvider.cs):
+  - Fixed fallback text search to execute whenever prior lookups (DiscogsId, barcode, catno) return 0 results, removing the erroneous restriction that skipped text search when a catalog number was specified.
+  - Added stripped title fallback in Discogs text search if the initial search with full title yields no results.
+- Updated [`Core/CueFileParser.cs`](file:///D:/git/CueComplete/Core/CueFileParser.cs):
+  - Added `ExtractCountryFromFolderName` to extract country codes from folder bracket metadata (e.g. `[1990, JP, WMCP-78]`) when `Country` is not defined in the CUE file.
+- Added 24 unit test cases in [`CueComplete.Tests/StringComparisonTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/StringComparisonTests.cs) (102/102 unit tests passing).
+- Verified `dotnet test`, `dotnet build`, and packaged single executable binary via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
