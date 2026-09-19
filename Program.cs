@@ -11,6 +11,30 @@ class Program
     {
         Console.OutputEncoding = System.Text.Encoding.UTF8;
 
+        AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
+        {
+            var ex = e.ExceptionObject as Exception;
+            var message = $"[{DateTime.Now:O}] Unhandled Domain Exception: {ex}\n";
+            try { File.AppendAllText("crash.log", message); } catch { }
+        };
+
+        TaskScheduler.UnobservedTaskException += (sender, e) =>
+        {
+            var message = $"[{DateTime.Now:O}] Unobserved Task Exception: {e.Exception}\n";
+            try { File.AppendAllText("crash.log", message); } catch { }
+            e.SetObserved();
+        };
+
+        static bool HandleUiException(Exception ex)
+        {
+            try
+            {
+                File.AppendAllText("crash.log", $"[{DateTime.Now:O}] UI Exception: {ex}\n");
+            }
+            catch { }
+            return true;
+        }
+
         // Load .env from user profile
         var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var envPath = Path.Combine(userProfile, ".env");
@@ -27,7 +51,6 @@ class Program
 
         try
         {
-            Application.UseSystemConsole = true;
             Application.Init();
 
             string? targetDirectory = args.Length > 0 ? args[0] : null;
@@ -41,7 +64,7 @@ class Program
                     AllowsMultipleSelection = false
                 };
 
-                Application.Run(openDialog);
+                Application.Run(openDialog, HandleUiException);
 
                 if (openDialog.Canceled)
                 {
@@ -69,12 +92,12 @@ class Program
             }
 
             var mainWindow = new MainWindow(cueFiles, metadataService);
-            Application.Run(mainWindow);
+            Application.Run(mainWindow, HandleUiException);
             Application.Shutdown();
         }
         catch (Exception ex)
         {
-            File.WriteAllText("crash.log", ex.ToString());
+            try { File.AppendAllText("crash.log", $"[{DateTime.Now:O}] Fatal Application Exception: {ex}\n"); } catch { }
             Console.WriteLine("A fatal error occurred. Please check crash.log for details.");
         }
     }

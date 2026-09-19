@@ -221,7 +221,17 @@ public class MainWindow : Window
     {
         _fileListView.SetFocus();
         UpdateLeftPaneTitle();
-        _currentCueData = CueFileParser.Parse(filePath);
+
+        try
+        {
+            _currentCueData = CueFileParser.Parse(filePath);
+        }
+        catch (Exception ex)
+        {
+            _metadataService.Log($"Failed to parse CUE file '{filePath}': {ex.Message}");
+            MessageBox.ErrorQuery("Parse Error", $"Failed to parse CUE file:\n{ex.Message}", "OK");
+            return;
+        }
         
         var folderName = Path.GetFileName(Path.GetDirectoryName(filePath));
         UpdateDetailsView($"File: {folderName}\\{Path.GetFileName(filePath)}", _currentCueData);
@@ -241,11 +251,25 @@ public class MainWindow : Window
 
         Action<string> onLogHandler = (msg) => 
         {
-            Application.MainLoop.Invoke(() => 
+            try
             {
-                progressLabel.Text = msg.Length > 45 ? msg.Substring(0, 42) + "..." : msg;
-                progressLabel.SetNeedsDisplay();
-            });
+                Application.MainLoop?.Invoke(() => 
+                {
+                    try
+                    {
+                        progressLabel.Text = msg.Length > 45 ? msg.Substring(0, 42) + "..." : msg;
+                        progressLabel.SetNeedsDisplay();
+                    }
+                    catch
+                    {
+                        // Ignore UI update errors if dialog is closing
+                    }
+                });
+            }
+            catch
+            {
+                // MainLoop might be shutting down
+            }
         };
 
         _metadataService.OnLog += onLogHandler;
@@ -263,34 +287,55 @@ public class MainWindow : Window
             }
             finally
             {
-                Application.MainLoop.Invoke(() => 
+                try
                 {
-                    _metadataService.OnLog -= onLogHandler;
-                _searchResults = results;
-                var displayList = _searchResults.Select(r => 
-                {
-                    string extra = "";
-                    if (r.Discs.HasValue || r.Tracks.HasValue)
+                    Application.MainLoop?.Invoke(() => 
                     {
-                        var d = r.DiscNumber.HasValue && r.Discs.HasValue ? $"[CD {r.DiscNumber} of {r.Discs}]" : r.Discs.HasValue ? $"{r.Discs}xCD" : "";
-                        var t = r.Tracks.HasValue ? $"{r.Tracks} Tracks" : "";
-                        extra = " - " + string.Join(", ", new[] { d, t }.Where(s => !string.IsNullOrEmpty(s)));
-                    }
-                    return $"{r.Source} {r.Artist} - {r.Album} [{r.Date}] [{r.CatalogNumber}] [{r.Barcode}]{extra}";
-                }).ToList();
-                
-                _resultsListView.SetSource(displayList);
-                Application.RequestStop(dialog);
+                        try
+                        {
+                            _metadataService.OnLog -= onLogHandler;
+                            _searchResults = results;
+                            var displayList = _searchResults.Select(r => 
+                            {
+                                string extra = "";
+                                if (r.Discs.HasValue || r.Tracks.HasValue)
+                                {
+                                    var d = r.DiscNumber.HasValue && r.Discs.HasValue ? $"[CD {r.DiscNumber} of {r.Discs}]" : r.Discs.HasValue ? $"{r.Discs}xCD" : "";
+                                    var t = r.Tracks.HasValue ? $"{r.Tracks} Tracks" : "";
+                                    extra = " - " + string.Join(", ", new[] { d, t }.Where(s => !string.IsNullOrEmpty(s)));
+                                }
+                                return $"{r.Source} {r.Artist} - {r.Album} [{r.Date}] [{r.CatalogNumber}] [{r.Barcode}]{extra}";
+                            }).ToList();
+                            
+                            _resultsListView.SetSource(displayList);
 
-                if (_searchResults.Count > 0)
-                {
-                    _resultsListView.SetFocus();
+                            if (_searchResults.Count > 0)
+                            {
+                                _resultsListView.SetFocus();
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _metadataService.Log($"Error updating search results UI: {ex}");
+                        }
+                        finally
+                        {
+                            Application.RequestStop(dialog);
+                        }
+                    });
                 }
-            });
+                catch (Exception ex)
+                {
+                    _metadataService.Log($"Error dispatching dialog stop to MainLoop: {ex}");
+                }
             }
         });
 
-        Application.Run(dialog);
+        Application.Run(dialog, ex =>
+        {
+            _metadataService.Log($"Search dialog error: {ex}");
+            return true;
+        });
     }
 
     private void ResultsListView_OpenSelectedItem(ListViewItemEventArgs obj)
@@ -325,18 +370,26 @@ public class MainWindow : Window
                 }
             }
 
-            var filePath = _cueFiles[_fileListView.SelectedItem];
-            CueFileWriter.Save(filePath, _currentCueData);
+            try
+            {
+                var filePath = _cueFiles[_fileListView.SelectedItem];
+                CueFileWriter.Save(filePath, _currentCueData);
 
-            int nextIndex = _fileListView.SelectedItem + 1;
-            if (nextIndex < _cueFiles.Count)
-            {
-                _fileListView.SelectedItem = nextIndex;
-                LoadCueFile(_cueFiles[nextIndex]);
+                int nextIndex = _fileListView.SelectedItem + 1;
+                if (nextIndex < _cueFiles.Count)
+                {
+                    _fileListView.SelectedItem = nextIndex;
+                    LoadCueFile(_cueFiles[nextIndex]);
+                }
+                else
+                {
+                    MessageBox.Query("Done", "All files processed.", "OK");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox.Query("Done", "All files processed.", "OK");
+                _metadataService.Log($"Failed to save CUE file: {ex}");
+                MessageBox.ErrorQuery("Save Error", $"Failed to save CUE file:\n{ex.Message}", "OK");
             }
         }
     }

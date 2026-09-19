@@ -156,3 +156,29 @@
 - Created pull request [#6](https://github.com/demoded/CueComplete/pull/6) targeting `master`.
 
 =======
+
+### [2026-09-19 17:03] Fix Application Hang Caused by NetMainLoop Concurrency Race Condition
+- Investigated hang in unresponsive process PID 16700 and memory dump [`CueComplete.dmp`](file:///D:/git/CueComplete/CueComplete.dmp).
+- Identified that `Terminal.Gui.NetMainLoop.NetInputHandler()` crashed with an unhandled `System.InvalidOperationException: Queue empty.` caused by concurrent unsynchronized access to `Queue<InputResult?>` between the background input thread and the UI thread's `MainIteration()`.
+- The crash occurred because [`Program.cs`](file:///D:/git/CueComplete/Program.cs) configured `Application.UseSystemConsole = true;`, forcing the use of `NetDriver` instead of the Windows-native `WindowsDriver`.
+- Removed `Application.UseSystemConsole = true;` from [`Program.cs`](file:///D:/git/CueComplete/Program.cs), allowing `Terminal.Gui.Application.Init()` to default to `WindowsDriver` and `WindowsMainLoop` on Windows.
+- Added `*.dmp` pattern to [`.gitignore`](file:///D:/git/CueComplete/.gitignore) to exclude process memory dumps from version control.
+- Verified all 44 unit tests pass via `dotnet test`.
+- Verified single-file release package compilation via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
+
+### [2026-09-19 17:06] Add Comprehensive Exception Handling Across UI and Application Lifecycle
+- Hooked `AppDomain.CurrentDomain.UnhandledException` and `TaskScheduler.UnobservedTaskException` in [`Program.cs`](file:///D:/git/CueComplete/Program.cs) to log unobserved/unhandled exceptions to `crash.log`.
+- Implemented `HandleUiException` in [`Program.cs`](file:///D:/git/CueComplete/Program.cs) and passed it to `Application.Run(openDialog, ...)` and `Application.Run(mainWindow, ...)` to gracefully handle and log UI loop exceptions without abrupt crashes.
+- Wrapped `CueFileParser.Parse` in [`UI/MainWindow.cs`](file:///D:/git/CueComplete/UI/MainWindow.cs) in a try-catch block with logging and `MessageBox.ErrorQuery` if parsing fails.
+- Protected `Application.MainLoop.Invoke` calls in `onLogHandler` and the search completion callback in [`UI/MainWindow.cs`](file:///D:/git/CueComplete/UI/MainWindow.cs) with exception guards.
+- Ensured `Application.RequestStop(dialog)` is executed inside a `finally` block within `MainLoop.Invoke` so search dialogs cannot remain stuck on screen.
+- Passed an `errorHandler` to `Application.Run(dialog, ...)` to log and cleanly exit the search dialog loop if an exception occurs.
+- Wrapped `CueFileWriter.Save` in `ResultsListView_OpenSelectedItem` with a try-catch block to display user-friendly error messages if saving fails.
+- Verified all 44 unit tests pass via `dotnet test`.
+- Packaged single-file release executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
+
+### [2026-09-19 18:10] Branch & Pull Request Creation
+- Created branch `fix/prevent-hang-and-add-exception-handling`.
+- Committed changes with message `fix(ui): prevent application hang by using WindowsDriver and add lifecycle exception handling`.
+- Pushed branch to `origin/fix/prevent-hang-and-add-exception-handling`.
+- Created pull request [#7](https://github.com/demoded/CueComplete/pull/7) targeting `master`.

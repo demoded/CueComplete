@@ -40,3 +40,6 @@ TestStubs/
 /plan.md
 /progress.md
 publish/
+
+# Dump files
+*.dmp
