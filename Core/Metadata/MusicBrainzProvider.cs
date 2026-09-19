@@ -139,8 +139,7 @@ public class MusicBrainzProvider : IMetadataProvider
 
             if (list.Count > 0 && !string.IsNullOrWhiteSpace(sourceData.Artist))
             {
-                var artistStr = sourceData.Artist.ToLower();
-                var filteredList = list.Where(r => r.Artist != null && r.Artist.ToLower().Contains(artistStr)).ToList();
+                var filteredList = list.Where(r => StringExtensions.MatchesArtist(r.Artist, sourceData.Artist)).ToList();
                 if (filteredList.Count > 0)
                 {
                     Log($"Filtered DiscID MusicBrainz results by artist '{sourceData.Artist}': count changed from {list.Count} to {filteredList.Count}");
@@ -196,8 +195,7 @@ public class MusicBrainzProvider : IMetadataProvider
 
             if (list.Count > 0 && !string.IsNullOrWhiteSpace(sourceData.Artist))
             {
-                var artistStr = sourceData.Artist.ToLower();
-                var filteredList = list.Where(r => r.Artist != null && r.Artist.ToLower().Contains(artistStr)).ToList();
+                var filteredList = list.Where(r => StringExtensions.MatchesArtist(r.Artist, sourceData.Artist)).ToList();
                 if (filteredList.Count > 0)
                 {
                     Log($"Filtered FreeDB MusicBrainz results by artist '{sourceData.Artist}': count changed from {list.Count} to {filteredList.Count}");
@@ -227,10 +225,9 @@ public class MusicBrainzProvider : IMetadataProvider
         var resultsList = searchResults.Results.ToList();
         if (resultsList.Count > 1 && !string.IsNullOrWhiteSpace(sourceData.Artist))
         {
-            var artistStr = sourceData.Artist.ToLower();
             var filtered = resultsList.Where(r =>
                 r.Item.ArtistCredit != null &&
-                r.Item.ArtistCredit.Any(ac => ac.Name != null && ac.Name.ToLower().Contains(artistStr))
+                r.Item.ArtistCredit.Any(ac => StringExtensions.MatchesArtist(ac.Name, sourceData.Artist))
             ).ToList();
 
             if (filtered.Count > 0)

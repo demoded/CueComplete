@@ -187,3 +187,18 @@
 - Updated version in [`CueComplete.csproj`](file:///D:/git/CueComplete/CueComplete.csproj) to `1.2.2`.
 - Merged pull request [#7](https://github.com/demoded/CueComplete/pull/7) (`fix/prevent-hang-and-add-exception-handling`) into `master`.
 - Created and pushed git tag `v1.2.2` to trigger automated GitHub Actions release workflow.
+
+### [2026-09-20 08:10] Implement Diacritic- and Case-Insensitive Artist Matching with CompareOptions
+- Added [`Core/StringExtensions.cs`](file:///D:/git/CueComplete/Core/StringExtensions.cs) providing `ContainsIgnoreCaseAndDiacritics` and `MatchesArtist` utilizing `CultureInfo.InvariantCulture.CompareInfo.IndexOf` with `CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace`.
+- Replaced rigid `.ToLowerInvariant().Contains(...)` artist post-filtering in [`Core/Metadata/DiscogsProvider.cs`](file:///D:/git/CueComplete/Core/Metadata/DiscogsProvider.cs) (`SearchAsync` and `PerformDiscogsSearchAsync`) with `StringExtensions.MatchesArtist`.
+- Replaced `.ToLower().Contains(...)` artist post-filtering in [`Core/Metadata/MusicBrainzProvider.cs`](file:///D:/git/CueComplete/Core/Metadata/MusicBrainzProvider.cs) (DiscID search, FreeDB search, and text search release credits) with `StringExtensions.MatchesArtist`.
+- Added unit and integration tests in [`CueComplete.Tests/StringComparisonTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/StringComparisonTests.cs) covering Cyrillic `ё` vs `е` matching (e.g. `Черный Кофе` and `Чёрный Кофе`), Latin diacritics/accents (`Motörhead`, `Beyoncé`), and Discogs catalog search verification for `MR 23143 CD`.
+- Verified all 68 unit tests pass via `dotnet test`.
+- Packaged single-file release executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
+
+### [2026-09-20 09:00] Branch Creation & Push
+- Created branch `fix/artist-matching-diacritics`.
+- Committed changes with message `fix(metadata): match artists ignoring diacritics and cyrillic yo using compareoptions`.
+- Pushed branch to `origin/fix/artist-matching-diacritics`.
+
+

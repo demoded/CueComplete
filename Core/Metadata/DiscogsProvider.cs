@@ -107,11 +107,7 @@ public class DiscogsProvider : IMetadataProvider
 
         if (list.Count > 0 && !string.IsNullOrWhiteSpace(sourceData.Artist))
         {
-            var targetArtistLower = sourceData.Artist.Trim().ToLowerInvariant();
-            var filtered = list.Where(d =>
-                !string.IsNullOrWhiteSpace(d.Artist) &&
-                (d.Artist.ToLowerInvariant().Contains(targetArtistLower) || targetArtistLower.Contains(d.Artist.ToLowerInvariant()))
-            ).ToList();
+            var filtered = list.Where(d => StringExtensions.MatchesArtist(d.Artist, sourceData.Artist)).ToList();
 
             if (filtered.Count < list.Count)
             {
@@ -221,11 +217,7 @@ public class DiscogsProvider : IMetadataProvider
 
         if (!string.IsNullOrWhiteSpace(sourceData.Artist))
         {
-            var targetArtistLower = sourceData.Artist.Trim().ToLowerInvariant();
-            var filtered = list.Where(d =>
-                !string.IsNullOrWhiteSpace(d.Artist) &&
-                (d.Artist.ToLowerInvariant().Contains(targetArtistLower) || targetArtistLower.Contains(d.Artist.ToLowerInvariant()))
-            ).ToList();
+            var filtered = list.Where(d => StringExtensions.MatchesArtist(d.Artist, sourceData.Artist)).ToList();
 
             if (filtered.Count < list.Count)
             {
