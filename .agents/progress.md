@@ -229,4 +229,13 @@
 - Pushed branch to `origin/fix/artist-matching-diacritics`.
 - Created pull request [#9](https://github.com/demoded/CueComplete/pull/9) targeting `master`.
 
+### [2026-09-20 09:16] Minor Release v1.3.0
+- Merged pull request [#8](https://github.com/demoded/CueComplete/pull/8) (`feat/new-ui-layout`) into `master`.
+- Merged pull request [#9](https://github.com/demoded/CueComplete/pull/9) (`fix/artist-matching-diacritics`) into `master`.
+- Updated version in [`CueComplete.csproj`](file:///D:/git/CueComplete/CueComplete.csproj) to `1.3.0`.
+- Verified all 72 unit tests pass via `dotnet test`.
+- Packaged single-file release executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
+- Created and pushed git tag `v1.3.0` to trigger automated GitHub Actions release workflow.
+
+
 
