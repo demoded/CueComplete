@@ -49,22 +49,38 @@ dotnet run -- "C:\Path\To\Your\Music\Folder"
 
 ## Search Logic
 
-CueComplete uses a tiered search strategy to find accurate metadata for your releases.
+CueComplete uses a tiered search strategy combining MusicBrainz and Discogs to identify, cross-reference, and enrich metadata for your releases.
+
+### Identifier Validation & Pre-Processing
+Before querying external services, identifiers are extracted and sanitized:
+- **Barcodes:** Validated to filter out dummy/placeholder values (e.g. `0000000000000`), matrix, runout, and SID codes.
+- **Catalog Numbers & Countries:** Extracted from `.cue` header fields or parsed from directory name metadata tags (e.g., `[1990, JP, WMCP-78]`).
+- **Title Annotations:** Parenthetical or bracketed suffix descriptors (such as `(Japan)`, `[Deluxe Edition]`, `(2011 Remaster)`, `[Bonus Tracks]`, `[CD1]`) are detected for fallback queries and country hint extraction.
 
 ### Fast Search
-The fast search path is designed to save API calls and time. It bypasses MusicBrainz entirely and relies exclusively on Discogs.
-- **Criteria:** The source `.cue` data must have either a `CatalogNumber` or a `Barcode` (and Discogs credentials must be configured).
-- **Execution:** It queries the Discogs database using the exact identifier.
+The fast search path is designed to save API calls and time when confident identifiers are present:
+- **Criteria:** The source `.cue` data must have a `CatalogNumber` or valid `Barcode` (and Discogs credentials must be configured).
+- **Execution:** Directly queries Discogs using the exact catalog number or barcode.
+- **Auto-Fallback:** If fast search returns no results, CueComplete automatically escalates to **Deep Search**.
 
 ### Deep Search
-The deep search orchestrates a comprehensive, multi-layered lookup across both MusicBrainz and Discogs, leveraging data from one API to enrich data from the other. A deep search is automatically triggered if the source `.cue` file lacks a Catalog Number or Barcode.
+Deep search orchestrates a comprehensive, multi-layered lookup across both MusicBrainz and Discogs, leveraging data from one service to cross-reference and enrich the other:
 
-1. **Prioritized Discogs Lookup:** If a Catalog Number is present, it is queried against Discogs first.
-2. **MusicBrainz Search:** 
-   - Uses FreeDB IDs (if present) to resolve to MusicBrainz releases.
-   - Falls back to querying MusicBrainz via Barcode or `Artist + Album`.
-   - Analyzes MusicBrainz "Relationships" data. If a release links to a Discogs URL, CueComplete fetches the Discogs metadata to enrich the MusicBrainz data.
-3. **Discogs Fallback Search:** Collects all unique Discogs IDs and Barcodes found during the MusicBrainz step and queries the Discogs API directly for those specific releases. If nothing is found, it performs a final raw text search on Discogs.
+1. **Prioritized Discogs Catalog Search:** If a Catalog Number is present, it is queried against Discogs first.
+2. **MusicBrainz Multi-Stage Resolution:**
+   - **MusicBrainz DiscID:** Direct lookup by DiscID. If direct lookup returns 404, queries the MusicBrainz search index (`discid:` / `cdtoc:`), strictly verifying that candidate releases contain the disc ID or match artist and track count to prevent false positives.
+   - **FreeDB Lookup:** Resolves FreeDB IDs via MusicBrainz (`/otherlookup/freedbid`) to find matching releases.
+   - **Barcode Search:** Queries MusicBrainz index by `barcode:` when a valid candidate is present.
+   - **Catalog Number Search:** Queries MusicBrainz index by `catno:` or `artist + catno:` when barcode is absent.
+   - **Text Search with Suffix Sanitization Fallback:** Queries `artist:"..." AND release:"..."`. If exact phrase search returns 0 results due to edition/regional suffix pollution (e.g. `(Japan)`), CueComplete automatically strips the annotation and re-queries using the canonical album title.
+   - **Discogs Link Enrichment:** Analyzes MusicBrainz URL relationships. If a release links to Discogs, CueComplete fetches the Discogs metadata to enrich tracklists, genres, and identifiers.
+   - **Intelligent Ranking:** Multiple MusicBrainz results are scored and prioritized based on catalog number match (+20), regional/country match using alias mapping such as `JP` ↔ `Japan` (+15), and track count match (+10).
+3. **Discogs Cross-Referencing & Fallback:**
+   - **ID & Barcode Resolution:** Queries Discogs for any Discogs IDs and valid barcodes collected during the MusicBrainz step.
+   - **Text Fallback:** If no releases were found via IDs, barcodes, or catalog numbers, performs text search on Discogs. If the original album title yields 0 results, it retries with the sanitized canonical title.
+4. **Diacritic & Conjunction Normalization:**
+   - Post-search verification across all providers uses diacritic- and case-insensitive comparison (`CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace`).
+   - Accented characters (`ё` / `е`, `ö`, `é`) and conjunction variants (`&` ↔ `and` / `+`) are normalized to ensure accurate artist matching.
 
 ## License
 

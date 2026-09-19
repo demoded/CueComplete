@@ -270,4 +270,8 @@
 ### [2026-09-20 11:32] Update Application Screenshot
 - Updated [`assets/screenshot.png`](file:///D:/git/CueComplete/assets/screenshot.png) reflecting the updated application UI layout.
 
+### [2026-09-20 11:36] Update Search Logic Documentation in README
+- Updated `Search Logic` section in [`README.md`](file:///D:/git/CueComplete/README.md) to document identifier sanitization (barcodes, catno, country, title annotations), auto-fallback from fast to deep search, MusicBrainz multi-stage lookup (DiscID, FreeDB, barcode, catno, stripped title fallback, Discogs enrichment, country-weighted scoring), Discogs cross-referencing and text fallback, and diacritic/conjunction normalization.
+
+
 
