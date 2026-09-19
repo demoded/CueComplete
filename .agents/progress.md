@@ -181,4 +181,4 @@
 - Created branch `fix/prevent-hang-and-add-exception-handling`.
 - Committed changes with message `fix(ui): prevent application hang by using WindowsDriver and add lifecycle exception handling`.
 - Pushed branch to `origin/fix/prevent-hang-and-add-exception-handling`.
-- Created pull request targeting `master`.
+- Created pull request [#7](https://github.com/demoded/CueComplete/pull/7) targeting `master`.
