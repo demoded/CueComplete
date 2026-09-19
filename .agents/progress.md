@@ -187,3 +187,31 @@
 - Updated version in [`CueComplete.csproj`](file:///D:/git/CueComplete/CueComplete.csproj) to `1.2.2`.
 - Merged pull request [#7](https://github.com/demoded/CueComplete/pull/7) (`fix/prevent-hang-and-add-exception-handling`) into `master`.
 - Created and pushed git tag `v1.2.2` to trigger automated GitHub Actions release workflow.
+
+### [2026-09-19 22:05] Implement New UI Layout
+- Reviewed [`.agents/new layout 20260919.md`](file:///D:/git/CueComplete/.agents/new%20layout%2020260919.md) and aligned on specifications via plan [`.agents/plan 20260919T2203.md`](file:///D:/git/CueComplete/.agents/plan%2020260919T2203.md).
+- Updated [`UI/MainWindow.cs`](file:///D:/git/CueComplete/UI/MainWindow.cs) to match the new multi-pane layout:
+  - Top row: Split into `Cue Files` (width: 20%, height: 9 lines) and `Search Results` (width: 80%, height: 9 lines).
+  - Formatted `Cue Files` title with dynamic zero-padded counter and forward slash (e.g. `Cue Files [01/99]`, `Cue Files [1/3]`, `Cue Files [0/0]`).
+  - Middle row: Added borderless single-line `_sourcePathLabel` (`Height = 1`) displaying the full source CUE file path.
+  - Bottom row: Added side-by-side comparison panes `Source cue details` (50% width) and `Found cue data` (50% width) for comparing source metadata and selected search result metadata.
+  - Updated StatusBar to include `~Enter~ Apply` alongside `~^Q~ Quit`, `~S~ Deep Search`, and `~^L~ Toggle Log`.
+- Updated unit tests in [`CueComplete.Tests/MainWindowTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/MainWindowTests.cs) covering counter formatting, zero-padding for 2+ digits, source path display, and pane structure (47/47 passing).
+- Verified `dotnet test`, `dotnet build -c Release`, and packaged single executable binary via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
+
+### [2026-09-19 22:30] Branch & Pull Request Creation
+- Created branch `feat/new-ui-layout`.
+- Committed changes with message `feat(ui): update application layout with split panes and metadata comparison`.
+- Pushed branch to `origin/feat/new-ui-layout`.
+- Created pull request [#8](https://github.com/demoded/CueComplete/pull/8) targeting `master`.
+
+### [2026-09-20 07:25] Lock Bottom Pane to 20 Lines and Make Top Section Flexible
+- Drafted plan in [`.agents/plan 20260920T0725.md`](file:///D:/git/CueComplete/.agents/plan%2020260920T0725.md).
+- Updated [`UI/MainWindow.cs`](file:///D:/git/CueComplete/UI/MainWindow.cs):
+  - Changed bottom panes (`Source cue details` and `Found cue data`) height to fixed 20 lines (`Height = 20`).
+  - Changed top panes (`Cue Files` and `Search Results`) height to `Dim.Fill(21)` so that the top section is flexible and fills all remaining vertical space.
+  - Preserved middle `_sourcePathLabel` at 1 line height (`Height = 1`).
+  - Exposed pane and label properties (`CueFilesPane`, `SearchResultsPane`, `SourceCueDetailsPane`, `FoundCueDataPane`, `SourcePathLabel`) on `MainWindow`.
+- Added test `MainWindow_LayoutDimensions_BottomSectionLockedTo20LinesAndTopFlexible` in [`CueComplete.Tests/MainWindowTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/MainWindowTests.cs) (48/48 tests passing).
+- Verified `dotnet test`, `dotnet build -c Release`, and published single executable binary via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
+
