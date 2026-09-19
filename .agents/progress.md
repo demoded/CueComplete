@@ -182,3 +182,8 @@
 - Committed changes with message `fix(ui): prevent application hang by using WindowsDriver and add lifecycle exception handling`.
 - Pushed branch to `origin/fix/prevent-hang-and-add-exception-handling`.
 - Created pull request [#7](https://github.com/demoded/CueComplete/pull/7) targeting `master`.
+
+### [2026-09-19 18:14] Patch Release v1.2.2
+- Updated version in [`CueComplete.csproj`](file:///D:/git/CueComplete/CueComplete.csproj) to `1.2.2`.
+- Merged pull request [#7](https://github.com/demoded/CueComplete/pull/7) (`fix/prevent-hang-and-add-exception-handling`) into `master`.
+- Created and pushed git tag `v1.2.2` to trigger automated GitHub Actions release workflow.
