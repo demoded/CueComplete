@@ -215,3 +215,18 @@
 - Added test `MainWindow_LayoutDimensions_BottomSectionLockedTo20LinesAndTopFlexible` in [`CueComplete.Tests/MainWindowTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/MainWindowTests.cs) (48/48 tests passing).
 - Verified `dotnet test`, `dotnet build -c Release`, and published single executable binary via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
 
+### [2026-09-20 08:10] Implement Diacritic- and Case-Insensitive Artist Matching with CompareOptions
+- Added [`Core/StringExtensions.cs`](file:///D:/git/CueComplete/Core/StringExtensions.cs) providing `ContainsIgnoreCaseAndDiacritics` and `MatchesArtist` utilizing `CultureInfo.InvariantCulture.CompareInfo.IndexOf` with `CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace`.
+- Replaced rigid `.ToLowerInvariant().Contains(...)` artist post-filtering in [`Core/Metadata/DiscogsProvider.cs`](file:///D:/git/CueComplete/Core/Metadata/DiscogsProvider.cs) (`SearchAsync` and `PerformDiscogsSearchAsync`) with `StringExtensions.MatchesArtist`.
+- Replaced `.ToLower().Contains(...)` artist post-filtering in [`Core/Metadata/MusicBrainzProvider.cs`](file:///D:/git/CueComplete/Core/Metadata/MusicBrainzProvider.cs) (DiscID search, FreeDB search, and text search release credits) with `StringExtensions.MatchesArtist`.
+- Added unit and integration tests in [`CueComplete.Tests/StringComparisonTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/StringComparisonTests.cs) covering Cyrillic `ё` vs `е` matching (e.g. `Черный Кофе` and `Чёрный Кофе`), Latin diacritics/accents (`Motörhead`, `Beyoncé`), and Discogs catalog search verification for `MR 23143 CD`.
+- Verified all 68 unit tests pass via `dotnet test`.
+- Packaged single-file release executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
+
+### [2026-09-20 09:00] Branch & Pull Request Creation
+- Created branch `fix/artist-matching-diacritics`.
+- Committed changes with message `fix(metadata): match artists ignoring diacritics and cyrillic yo using compareoptions`.
+- Pushed branch to `origin/fix/artist-matching-diacritics`.
+- Created pull request [#9](https://github.com/demoded/CueComplete/pull/9) targeting `master`.
+
+
