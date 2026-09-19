@@ -9,13 +9,26 @@ public class MainWindow : Window
     private readonly MetadataService _metadataService;
     private readonly List<string> _cueFiles;
     
-    private FrameView _leftPane;
+    private FrameView _cueFilesPane;
+    private FrameView _searchResultsPane;
+    private FrameView _sourceCueDetailsPane;
+    private FrameView _foundCueDataPane;
     private ListView _fileListView;
-    private TextView _detailsTextView;
     private ListView _resultsListView;
+    private Label _sourcePathLabel;
+    private TextView _sourceDetailsTextView;
+    private TextView _foundDetailsTextView;
 
-    public string LeftPaneTitle => _leftPane?.Title?.ToString() ?? string.Empty;
+    public string LeftPaneTitle => _cueFilesPane?.Title?.ToString() ?? string.Empty;
+    public string CueFilesPaneTitle => LeftPaneTitle;
+    public string SearchResultsPaneTitle => _searchResultsPane?.Title?.ToString() ?? string.Empty;
+    public string SourceCueDetailsPaneTitle => _sourceCueDetailsPane?.Title?.ToString() ?? string.Empty;
+    public string FoundCueDataPaneTitle => _foundCueDataPane?.Title?.ToString() ?? string.Empty;
     public ListView FileListView => _fileListView;
+    public ListView ResultsListView => _resultsListView;
+    public string SourcePath => _sourcePathLabel?.Text?.ToString() ?? string.Empty;
+    public string SourceDetailsText => _sourceDetailsTextView?.Text?.ToString() ?? string.Empty;
+    public string FoundDetailsText => _foundDetailsTextView?.Text?.ToString() ?? string.Empty;
     
     private CueData? _currentCueData;
     private List<CueData> _searchResults = new();
@@ -26,12 +39,12 @@ public class MainWindow : Window
         _metadataService = metadataService;
         _cueFiles = cueFiles;
 
-        _leftPane = new FrameView("CUE Files")
+        _cueFilesPane = new FrameView("Cue Files")
         {
             X = 0,
             Y = 0,
-            Width = Dim.Percent(30),
-            Height = Dim.Fill()
+            Width = Dim.Percent(20),
+            Height = 9
         };
 
         var displayFiles = _cueFiles.Select(f => {
@@ -56,35 +69,16 @@ public class MainWindow : Window
             UpdateLeftPaneTitle();
             UpdateFilePreview();
         };
-        _leftPane.Add(_fileListView);
+        _cueFilesPane.Add(_fileListView);
 
         UpdateLeftPaneTitle();
 
-        var rightPaneTop = new FrameView("Current Details")
+        _searchResultsPane = new FrameView("Search Results")
         {
-            X = Pos.Right(_leftPane),
+            X = Pos.Right(_cueFilesPane),
             Y = 0,
             Width = Dim.Fill(),
-            Height = Dim.Percent(40) + 3
-        };
-        
-        _detailsTextView = new TextView()
-        {
-            X = 0,
-            Y = 0,
-            Width = Dim.Fill(),
-            Height = Dim.Fill(),
-            ReadOnly = true,
-            WordWrap = true
-        };
-        rightPaneTop.Add(_detailsTextView);
-
-        var rightPaneBottom = new FrameView("Search Results (Press Enter to Apply, 's' for Deep Search)")
-        {
-            X = Pos.Right(_leftPane),
-            Y = Pos.Bottom(rightPaneTop),
-            Width = Dim.Fill(),
-            Height = Dim.Fill()
+            Height = 9
         };
         
         _resultsListView = new ListView()
@@ -97,10 +91,66 @@ public class MainWindow : Window
         _resultsListView.OpenSelectedItem += ResultsListView_OpenSelectedItem;
         _resultsListView.SelectedItemChanged += (e) => { if (_resultsListView.HasFocus) UpdateResultPreview(); };
         _resultsListView.Enter += (e) => UpdateResultPreview();
-        rightPaneBottom.Add(_resultsListView);
+        _searchResultsPane.Add(_resultsListView);
+
+        _sourcePathLabel = new Label(string.Empty)
+        {
+            X = 0,
+            Y = Pos.Bottom(_cueFilesPane),
+            Width = Dim.Fill(),
+            Height = 1
+        };
+
+        _sourceCueDetailsPane = new FrameView("Source cue details")
+        {
+            X = 0,
+            Y = Pos.Bottom(_sourcePathLabel),
+            Width = Dim.Percent(50),
+            Height = Dim.Fill()
+        };
+
+        _sourceDetailsTextView = new TextView()
+        {
+            X = 0,
+            Y = 0,
+            Width = Dim.Fill(),
+            Height = Dim.Fill(),
+            ReadOnly = true,
+            WordWrap = true
+        };
+        _sourceCueDetailsPane.Add(_sourceDetailsTextView);
+
+        _foundCueDataPane = new FrameView("Found cue data")
+        {
+            X = Pos.Right(_sourceCueDetailsPane),
+            Y = Pos.Bottom(_sourcePathLabel),
+            Width = Dim.Fill(),
+            Height = Dim.Fill()
+        };
+
+        _foundDetailsTextView = new TextView()
+        {
+            X = 0,
+            Y = 0,
+            Width = Dim.Fill(),
+            Height = Dim.Fill(),
+            ReadOnly = true,
+            WordWrap = true
+        };
+        _foundCueDataPane.Add(_foundDetailsTextView);
 
         var statusBar = new StatusBar(new StatusItem[] {
             new StatusItem(Key.CtrlMask | Key.Q, "~^Q~ Quit", () => Application.RequestStop()),
+            new StatusItem(Key.Null, "~Enter~ Apply", () => {
+                if (_resultsListView.HasFocus && _resultsListView.SelectedItem >= 0)
+                {
+                    ResultsListView_OpenSelectedItem(new ListViewItemEventArgs(_resultsListView.SelectedItem, null));
+                }
+                else if (_fileListView.HasFocus && _fileListView.SelectedItem >= 0 && _fileListView.SelectedItem < _cueFiles.Count)
+                {
+                    LoadCueFile(_cueFiles[_fileListView.SelectedItem]);
+                }
+            }),
             new StatusItem(Key.Null, "~S~ Deep Search", () => {
                 if (_fileListView.SelectedItem >= 0 && _fileListView.SelectedItem < _cueFiles.Count)
                 {
@@ -128,7 +178,7 @@ public class MainWindow : Window
             return false;
         };
 
-        Add(_leftPane, rightPaneTop, rightPaneBottom, statusBar);
+        Add(_cueFilesPane, _searchResultsPane, _sourcePathLabel, _sourceCueDetailsPane, _foundCueDataPane, statusBar);
 
         if (_cueFiles.Count > 0)
         {
@@ -151,10 +201,15 @@ public class MainWindow : Window
         }
     }
 
-    private void UpdateDetailsView(string title, CueData data)
+    private static string FormatCueData(CueData? data)
     {
-        _detailsTextView.Text = $"{title}\n\n" +
-            $"Artist: {data.Artist}\n" +
+        if (data == null) return string.Empty;
+
+        string discsStr = data.DiscNumber.HasValue && data.Discs.HasValue && data.Discs > 1
+            ? $"{data.DiscNumber} of {data.Discs}"
+            : $"{data.Discs}";
+
+        return $"Artist: {data.Artist}\n" +
             $"Album: {data.Album}\n" +
             $"Genre: {data.Genre}\n" +
             $"Date: {data.Date}\n" +
@@ -163,25 +218,30 @@ public class MainWindow : Window
             $"Country: {data.Country}\n" +
             $"Barcode: {data.Barcode}\n" +
             $"Rel Date: {data.ReleaseDate}\n" +
-            $"Discs: {data.Discs}  Tracks: {data.Tracks}";
+            $"Discs: {discsStr}  Tracks: {data.Tracks}" +
+            (!string.IsNullOrWhiteSpace(data.Comment) ? $"\nComment: {data.Comment}" : "");
     }
 
     private void UpdateLeftPaneTitle()
     {
+        int total = _cueFiles.Count;
+        int digits = Math.Max(1, total.ToString().Length);
         int current = 0;
-        if (_cueFiles.Count > 0)
+        if (total > 0)
         {
             if (_fileListView != null && _fileListView.SelectedItem >= 0)
             {
-                current = Math.Min(_fileListView.SelectedItem + 1, _cueFiles.Count);
+                current = Math.Min(_fileListView.SelectedItem + 1, total);
             }
             else
             {
                 current = 1;
             }
         }
-        _leftPane.Title = $"CUE Files [{current}\\{_cueFiles.Count}]";
-        _leftPane.SetNeedsDisplay();
+        string currentStr = current.ToString($"D{digits}");
+        string totalStr = total.ToString($"D{digits}");
+        _cueFilesPane.Title = $"Cue Files [{currentStr}/{totalStr}]";
+        _cueFilesPane.SetNeedsDisplay();
     }
 
     private void UpdateFilePreview()
@@ -190,14 +250,24 @@ public class MainWindow : Window
         if (_fileListView.SelectedItem >= 0 && _fileListView.SelectedItem < _cueFiles.Count)
         {
             var filePath = _cueFiles[_fileListView.SelectedItem];
+            _sourcePathLabel.Text = filePath;
             try {
                 var previewData = CueFileParser.Parse(filePath);
-                var folderName = Path.GetFileName(Path.GetDirectoryName(filePath));
-                UpdateDetailsView($"File: {folderName}\\{Path.GetFileName(filePath)}", previewData);
+                _sourceDetailsTextView.Text = FormatCueData(previewData);
+                _foundDetailsTextView.Text = string.Empty;
                 
                 _searchResults.Clear();
                 _resultsListView.SetSource(_searchResults);
-            } catch {}
+            } catch {
+                _sourceDetailsTextView.Text = string.Empty;
+                _foundDetailsTextView.Text = string.Empty;
+            }
+        }
+        else
+        {
+            _sourcePathLabel.Text = string.Empty;
+            _sourceDetailsTextView.Text = string.Empty;
+            _foundDetailsTextView.Text = string.Empty;
         }
     }
 
@@ -206,14 +276,11 @@ public class MainWindow : Window
         if (_searchResults != null && _resultsListView.SelectedItem >= 0 && _resultsListView.SelectedItem < _searchResults.Count)
         {
             var data = _searchResults[_resultsListView.SelectedItem];
-            string title = "";
-            if (_fileListView.SelectedItem >= 0 && _fileListView.SelectedItem < _cueFiles.Count)
-            {
-                var filePath = _cueFiles[_fileListView.SelectedItem];
-                var folderName = Path.GetFileName(Path.GetDirectoryName(filePath));
-                title = $"File: {folderName}\\{Path.GetFileName(filePath)}";
-            }
-            UpdateDetailsView(title, data);
+            _foundDetailsTextView.Text = FormatCueData(data);
+        }
+        else
+        {
+            _foundDetailsTextView.Text = string.Empty;
         }
     }
 
@@ -221,6 +288,7 @@ public class MainWindow : Window
     {
         _fileListView.SetFocus();
         UpdateLeftPaneTitle();
+        _sourcePathLabel.Text = filePath;
 
         try
         {
@@ -233,9 +301,8 @@ public class MainWindow : Window
             return;
         }
         
-        var folderName = Path.GetFileName(Path.GetDirectoryName(filePath));
-        UpdateDetailsView($"File: {folderName}\\{Path.GetFileName(filePath)}", _currentCueData);
-            
+        _sourceDetailsTextView.Text = FormatCueData(_currentCueData);
+        _foundDetailsTextView.Text = string.Empty;
             
         _searchResults.Clear();
         _resultsListView.SetSource(_searchResults);
@@ -311,7 +378,13 @@ public class MainWindow : Window
 
                             if (_searchResults.Count > 0)
                             {
+                                _resultsListView.SelectedItem = 0;
+                                UpdateResultPreview();
                                 _resultsListView.SetFocus();
+                            }
+                            else
+                            {
+                                _foundDetailsTextView.Text = "(No results found)";
                             }
                         }
                         catch (Exception ex)
@@ -383,6 +456,8 @@ public class MainWindow : Window
                 }
                 else
                 {
+                    _sourceDetailsTextView.Text = FormatCueData(_currentCueData);
+                    _foundDetailsTextView.Text = string.Empty;
                     MessageBox.Query("Done", "All files processed.", "OK");
                 }
             }
