@@ -267,3 +267,7 @@
 - Updated version in [`CueComplete.csproj`](file:///D:/git/CueComplete/CueComplete.csproj) to `1.3.1`.
 - Created semantic version tag `v1.3.1` and pushed to GitHub to trigger automated release workflow.
 
+### [2026-09-20 11:32] Update Application Screenshot
+- Updated [`assets/screenshot.png`](file:///D:/git/CueComplete/assets/screenshot.png) reflecting the updated application UI layout.
+
+
