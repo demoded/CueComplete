@@ -1,5 +1,6 @@
 using MetaBrainz.MusicBrainz;
 using MetaBrainz.MusicBrainz.Interfaces.Entities;
+using MetaBrainz.MusicBrainz.Interfaces.Searches;
 using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
@@ -58,7 +59,7 @@ public class MusicBrainzProvider : IMetadataProvider
                         var release = rel;
                         try
                         {
-                            release = await _mbClient.LookupReleaseAsync(release.Id, Include.Labels | Include.Genres | Include.UrlRelationships | Include.Recordings);
+                            release = await _mbClient.LookupReleaseAsync(release.Id, Include.ArtistCredits | Include.DiscIds | Include.Labels | Include.Genres | Include.UrlRelationships | Include.Recordings);
                         }
                         catch { }
 
@@ -106,9 +107,24 @@ public class MusicBrainzProvider : IMetadataProvider
                             var release = res.Item;
                             try
                             {
-                                release = await _mbClient.LookupReleaseAsync(release.Id, Include.Labels | Include.Genres | Include.UrlRelationships | Include.Recordings);
+                                release = await _mbClient.LookupReleaseAsync(release.Id, Include.ArtistCredits | Include.DiscIds | Include.Labels | Include.Genres | Include.UrlRelationships | Include.Recordings);
                             }
                             catch { }
+
+                            // If this was found via fallback search on discid, verify that the release ACTUALLY contains this discid,
+                            // OR that the artist matches sourceData.Artist AND track count matches (if available).
+                            bool hasMatchingDiscId = release.Media != null && release.Media.Any(m => m.Discs != null && m.Discs.Any(d => string.Equals(d.Id, sourceData.MusicBrainzDiscId, StringComparison.OrdinalIgnoreCase)));
+
+                            string? releaseArtist = release.ArtistCredit?.FirstOrDefault()?.Name;
+                            bool artistMatches = !string.IsNullOrWhiteSpace(sourceData.Artist) && StringExtensions.MatchesArtist(releaseArtist, sourceData.Artist);
+
+                            bool tracksMatch = !sourceData.Tracks.HasValue || sourceData.Tracks.Value <= 0 || (release.Media != null && release.Media.Any(m => m.TrackCount == sourceData.Tracks.Value));
+
+                            if (!hasMatchingDiscId && (!artistMatches || !tracksMatch))
+                            {
+                                Log($"Discarding DiscID fallback match '{release.Title}' by '{releaseArtist}': DiscID, artist, or track count did not match.");
+                                continue;
+                            }
 
                             var dto = MapToDto(release, sourceData.Artist, sourceData);
                             var data = dto.ToCueData();
@@ -164,7 +180,7 @@ public class MusicBrainzProvider : IMetadataProvider
                 Log($"Found MusicBrainz Release ID via FreeDB: {releaseId}");
                 try
                 {
-                    var release = await _mbClient.LookupReleaseAsync(Guid.Parse(releaseId), Include.Labels | Include.Genres | Include.UrlRelationships | Include.Recordings);
+                    var release = await _mbClient.LookupReleaseAsync(Guid.Parse(releaseId), Include.ArtistCredits | Include.DiscIds | Include.Labels | Include.Genres | Include.UrlRelationships | Include.Recordings);
                     var dto = MapToDto(release, sourceData.Artist, sourceData);
                     var data = dto.ToCueData();
 
@@ -211,18 +227,64 @@ public class MusicBrainzProvider : IMetadataProvider
             if (list.Count > 0) return list;
         }
 
-        string query = "";
-        if (!string.IsNullOrWhiteSpace(sourceData.Barcode))
-            query = $"barcode:\"{sourceData.Barcode}\"";
-        else if (!string.IsNullOrWhiteSpace(sourceData.Artist) && !string.IsNullOrWhiteSpace(sourceData.Album))
-            query = $"artist:\"{sourceData.Artist}\" AND release:\"{sourceData.Album}\"";
-        else
+        var resultsList = new List<ISearchResult<IRelease>>();
+
+        if (!string.IsNullOrWhiteSpace(sourceData.Barcode) && DiscogsProvider.IsValidBarcodeCandidate(sourceData.Barcode))
+        {
+            var query = $"barcode:\"{sourceData.Barcode}\"";
+            Log($"MusicBrainz query (Barcode): {query}");
+            var searchResults = await _mbClient.FindReleasesAsync(query, 5);
+            if (searchResults?.Results != null)
+                resultsList.AddRange(searchResults.Results);
+        }
+
+        if (resultsList.Count == 0 && !string.IsNullOrWhiteSpace(sourceData.CatalogNumber))
+        {
+            string escapedCatNo = Regex.Replace(sourceData.CatalogNumber, @"([+\-&&||!(){}\[\]^""~*?:\\/])", @"\$1");
+            string catQuery = !string.IsNullOrWhiteSpace(sourceData.Artist)
+                ? $"artist:\"{sourceData.Artist}\" AND catno:\"{escapedCatNo}\""
+                : $"catno:\"{escapedCatNo}\"";
+
+            Log($"MusicBrainz query (CatNo): {catQuery}");
+            try
+            {
+                var searchResults = await _mbClient.FindReleasesAsync(catQuery, 5);
+                if (searchResults?.Results != null && searchResults.Results.Count > 0)
+                {
+                    resultsList.AddRange(searchResults.Results);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"MusicBrainz CatNo query error: {ex.Message}");
+            }
+        }
+
+        if (resultsList.Count == 0 && !string.IsNullOrWhiteSpace(sourceData.Artist) && !string.IsNullOrWhiteSpace(sourceData.Album))
+        {
+            string query = $"artist:\"{sourceData.Artist}\" AND release:\"{sourceData.Album}\"";
+            Log($"MusicBrainz query: {query}");
+            var searchResults = await _mbClient.FindReleasesAsync(query, 5);
+            if (searchResults?.Results != null)
+                resultsList.AddRange(searchResults.Results);
+
+            if (resultsList.Count == 0)
+            {
+                var cleanAlbum = StringExtensions.StripTitleAnnotations(sourceData.Album);
+                if (!string.IsNullOrWhiteSpace(cleanAlbum) && !string.Equals(cleanAlbum, sourceData.Album, StringComparison.OrdinalIgnoreCase))
+                {
+                    string fallbackQuery = $"artist:\"{sourceData.Artist}\" AND release:\"{cleanAlbum}\"";
+                    Log($"MusicBrainz initial query returned 0 results. Retrying with stripped album title: {fallbackQuery}");
+                    var fallbackResults = await _mbClient.FindReleasesAsync(fallbackQuery, 5);
+                    if (fallbackResults?.Results != null)
+                        resultsList.AddRange(fallbackResults.Results);
+                }
+            }
+        }
+
+        if (resultsList.Count == 0)
             return list;
 
-        Log($"MusicBrainz query: {query}");
-        var searchResults = await _mbClient.FindReleasesAsync(query, 5);
-
-        var resultsList = searchResults.Results.ToList();
         if (resultsList.Count > 1 && !string.IsNullOrWhiteSpace(sourceData.Artist))
         {
             var filtered = resultsList.Where(r =>
@@ -243,7 +305,7 @@ public class MusicBrainzProvider : IMetadataProvider
 
             try
             {
-                release = await _mbClient.LookupReleaseAsync(release.Id, Include.Labels | Include.Genres | Include.UrlRelationships | Include.Recordings);
+                release = await _mbClient.LookupReleaseAsync(release.Id, Include.ArtistCredits | Include.DiscIds | Include.Labels | Include.Genres | Include.UrlRelationships | Include.Recordings);
             }
             catch { /* Ignore lookup failure */ }
 
@@ -268,6 +330,30 @@ public class MusicBrainzProvider : IMetadataProvider
 
             Log($"MusicBrainz match: ID={release.Id}, Title={release.Title}, Date={release.Date}, Barcode={release.Barcode}");
             list.Add(data);
+        }
+
+        if (list.Count > 1)
+        {
+            var targetCatNo = sourceData.CatalogNumber?.Replace(" ", "").ToLowerInvariant();
+            list = list.OrderByDescending(d =>
+            {
+                int score = 0;
+                if (!string.IsNullOrEmpty(targetCatNo) && !string.IsNullOrWhiteSpace(d.CatalogNumber))
+                {
+                    var cleanCat = d.CatalogNumber.Replace(" ", "").ToLowerInvariant();
+                    if (cleanCat.Contains(targetCatNo) || targetCatNo.Contains(cleanCat))
+                        score += 20;
+                }
+                if (sourceData.Tracks.HasValue && sourceData.Tracks.Value > 0 && d.Tracks == sourceData.Tracks.Value)
+                {
+                    score += 10;
+                }
+                if (StringExtensions.MatchesSourceCountry(d.Country, sourceData))
+                {
+                    score += 15;
+                }
+                return score;
+            }).ToList();
         }
 
         return list;

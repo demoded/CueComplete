@@ -34,6 +34,10 @@ public class StringComparisonTests
     [InlineData("Черный Кофе = Black Coffee", "Чёрный Кофе", true)]
     [InlineData("Joan Jett & the Blackhearts", "Joan Jett", true)]
     [InlineData("Joan Jett", "Joan Jett & the Blackhearts", true)]
+    [InlineData("Flotsam & Jetsam", "Flotsam and Jetsam", true)]
+    [InlineData("Flotsam and Jetsam", "Flotsam & Jetsam", true)]
+    [InlineData("Simon & Garfunkel", "Simon and Garfunkel", true)]
+    [InlineData("Kool & The Gang", "Kool and the Gang", true)]
     [InlineData("Motörhead", "Motorhead", true)]
     [InlineData("Daevid Allen", "Joan Jett", false)]
     [InlineData(null, "Черный Кофе", false)]
@@ -43,6 +47,52 @@ public class StringComparisonTests
     {
         var result = StringExtensions.MatchesArtist(candidate, target);
         Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData("When The Storm Comes Down (Japan)", "When The Storm Comes Down")]
+    [InlineData("When The Storm Comes Down [Japan]", "When The Storm Comes Down")]
+    [InlineData("When The Storm Comes Down (Japan) (1990)", "When The Storm Comes Down")]
+    [InlineData("When The Storm Comes Down (Japan) [Remastered]", "When The Storm Comes Down")]
+    [InlineData("When The Storm Comes Down - (Japan)", "When The Storm Comes Down")]
+    [InlineData("Album Title (Deluxe Edition)", "Album Title")]
+    [InlineData("Album Title [Bonus Tracks]", "Album Title")]
+    [InlineData("(Untitled)", "(Untitled)")]
+    [InlineData("", "")]
+    [InlineData(null, "")]
+    public void StripTitleAnnotations_StripsTrailingAnnotations(string? input, string expected)
+    {
+        var result = StringExtensions.StripTitleAnnotations(input);
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData("JP", "Japan", true)]
+    [InlineData("Japan", "JP", true)]
+    [InlineData("US", "United States", true)]
+    [InlineData("UK", "GB", true)]
+    [InlineData("Europe", "XE", true)]
+    [InlineData("Germany", "DE", true)]
+    [InlineData("JP", "US", false)]
+    [InlineData(null, "Japan", false)]
+    public void MatchesCountry_EvaluatesCorrectly(string? country1, string? country2, bool expected)
+    {
+        var result = StringExtensions.MatchesCountry(country1, country2);
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void MatchesSourceCountry_MatchesCountryFromAlbumAnnotation()
+    {
+        var sourceData = new CueData
+        {
+            Artist = "Flotsam & Jetsam",
+            Album = "When The Storm Comes Down (Japan)"
+        };
+
+        Assert.True(StringExtensions.MatchesSourceCountry("JP", sourceData));
+        Assert.True(StringExtensions.MatchesSourceCountry("Japan", sourceData));
+        Assert.False(StringExtensions.MatchesSourceCountry("US", sourceData));
     }
 
     [Fact]
@@ -122,6 +172,92 @@ public class StringComparisonTests
         Assert.Single(results);
         Assert.Equal("Чёрный Кофе", results[0].Artist);
         Assert.Equal("MR 23143 CD", results[0].CatalogNumber);
+    }
+
+    [Fact]
+    public async Task DiscogsProvider_SearchAsync_FallsBackToTextSearch_AndStrippedTitle_WhenCatNoReturnsEmpty()
+    {
+        var releaseJson = """
+        {
+            "id": 7131871,
+            "title": "When The Storm Comes Down",
+            "year": 1990,
+            "artists": [
+                {
+                    "name": "Flotsam And Jetsam",
+                    "anv": "",
+                    "id": 106065
+                }
+            ],
+            "labels": [
+                {
+                    "name": "MCA Records",
+                    "catno": "WMC5-78"
+                }
+            ]
+        }
+        """;
+
+        var emptySearchJson = """{ "pagination": { "page": 1, "pages": 1, "per_page": 50, "items": 0, "urls": {} }, "results": [] }""";
+        var matchedSearchJson = """
+        {
+            "pagination": { "page": 1, "pages": 1, "per_page": 50, "items": 1, "urls": {} },
+            "results": [
+                {
+                    "country": "Japan",
+                    "year": 1990,
+                    "id": 7131871,
+                    "catno": "WMC5-78",
+                    "title": "Flotsam And Jetsam - When The Storm Comes Down",
+                    "resource_url": "https://api.discogs.com/releases/7131871"
+                }
+            ]
+        }
+        """;
+
+        var handler = new TestHttpMessageHandler((request) =>
+        {
+            var uri = request.RequestUri!.ToString();
+            if (uri.Contains("releases/7131871"))
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(releaseJson, Encoding.UTF8, "application/json")
+                };
+            }
+
+            // If searching with original title with (Japan), return 0 results
+            if (uri.Contains("Japan"))
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(emptySearchJson, Encoding.UTF8, "application/json")
+                };
+            }
+
+            // Stripped title search matches!
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(matchedSearchJson, Encoding.UTF8, "application/json")
+            };
+        });
+
+        var httpClient = new HttpClient(handler);
+        var provider = new DiscogsProvider("fakeKey", "fakeSecret", "fakeToken", httpClient);
+
+        var sourceData = new CueData
+        {
+            Artist = "Flotsam & Jetsam",
+            Album = "When The Storm Comes Down (Japan)",
+            CatalogNumber = "WMCP-78" // Mismatched catno that returns nothing
+        };
+
+        var results = await provider.SearchAsync(sourceData);
+
+        Assert.Single(results);
+        Assert.Equal("Flotsam And Jetsam", results[0].Artist);
+        Assert.Equal("When The Storm Comes Down", results[0].Album);
+        Assert.Equal("WMC5-78", results[0].CatalogNumber);
     }
 
     private class TestHttpMessageHandler : HttpMessageHandler

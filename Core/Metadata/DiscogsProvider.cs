@@ -99,10 +99,21 @@ public class DiscogsProvider : IMetadataProvider
         }
 
         // 3. Fallback to Text Search if nothing was found
-        if (discogsIds.Count == 0 && barcodes.Count == 0 && list.Count == 0 && string.IsNullOrWhiteSpace(sourceData.CatalogNumber))
+        if (discogsIds.Count == 0 && barcodes.Count == 0 && list.Count == 0)
         {
-            string query = $"{sourceData.Artist} {sourceData.Album}";
+            string query = $"{sourceData.Artist} {sourceData.Album}".Trim();
             await PerformDiscogsTextSearchAsync(query, sourceData, list);
+
+            if (list.Count == 0)
+            {
+                var cleanAlbum = StringExtensions.StripTitleAnnotations(sourceData.Album);
+                if (!string.IsNullOrWhiteSpace(cleanAlbum) && !string.Equals(cleanAlbum, sourceData.Album, StringComparison.OrdinalIgnoreCase))
+                {
+                    string fallbackQuery = $"{sourceData.Artist} {cleanAlbum}".Trim();
+                    Log($"Discogs text search with full album returned 0 results. Retrying with stripped album title: '{cleanAlbum}'");
+                    await PerformDiscogsTextSearchAsync(fallbackQuery, sourceData, list);
+                }
+            }
         }
 
         if (list.Count > 0 && !string.IsNullOrWhiteSpace(sourceData.Artist))
@@ -485,7 +496,18 @@ public class DiscogsProvider : IMetadataProvider
         }
 
         int digitCount = input.Count(char.IsDigit);
-        return digitCount >= 6;
+        if (digitCount < 6)
+        {
+            return false;
+        }
+
+        // A barcode cannot be all zeros (e.g. dummy CATALOG 0000000000000 in CUE files)
+        if (input.All(c => !char.IsDigit(c) || c == '0'))
+        {
+            return false;
+        }
+
+        return true;
     }
 }
 

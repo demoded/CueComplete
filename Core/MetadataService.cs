@@ -37,7 +37,7 @@ public class MetadataService
         var results = new List<CueData>();
 
         bool hasCatalogNumber = !string.IsNullOrWhiteSpace(sourceData.CatalogNumber);
-        bool hasBarcode = !string.IsNullOrWhiteSpace(sourceData.Barcode);
+        bool hasBarcode = !string.IsNullOrWhiteSpace(sourceData.Barcode) && DiscogsProvider.IsValidBarcodeCandidate(sourceData.Barcode);
 
         if (!deepSearch && !hasCatalogNumber && !hasBarcode)
         {
