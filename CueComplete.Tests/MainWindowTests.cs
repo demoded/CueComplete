@@ -112,6 +112,38 @@ public class MainWindowTests
             Assert.Equal("file1.cue", window.SourcePath);
             Assert.NotNull(window.FileListView);
             Assert.NotNull(window.ResultsListView);
+            Assert.NotNull(window.CueFilesPane);
+            Assert.NotNull(window.SearchResultsPane);
+            Assert.NotNull(window.SourceCueDetailsPane);
+            Assert.NotNull(window.FoundCueDataPane);
+            Assert.NotNull(window.SourcePathLabel);
+        }
+        finally
+        {
+            Application.Shutdown();
+        }
+    }
+
+    [Fact]
+    public void MainWindow_LayoutDimensions_BottomSectionLockedTo20LinesAndTopFlexible()
+    {
+        Application.Init(new FakeDriver());
+        try
+        {
+            var dummyFiles = new List<string> { "file1.cue" };
+            var service = new MetadataService(null, null, null);
+            var window = new MainWindow(dummyFiles, service);
+
+            // Verify bottom panes have Height = 20
+            Assert.Equal((Dim)20, window.SourceCueDetailsPane.Height);
+            Assert.Equal((Dim)20, window.FoundCueDataPane.Height);
+
+            // Verify source path label has Height = 1
+            Assert.Equal((Dim)1, window.SourcePathLabel.Height);
+
+            // Verify top panes have flexible height filling up to 21 lines reserved for bottom and path
+            Assert.Equal(Dim.Fill(21), window.CueFilesPane.Height);
+            Assert.Equal(Dim.Fill(21), window.SearchResultsPane.Height);
         }
         finally
         {

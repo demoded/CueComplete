@@ -29,6 +29,11 @@ public class MainWindow : Window
     public string SourcePath => _sourcePathLabel?.Text?.ToString() ?? string.Empty;
     public string SourceDetailsText => _sourceDetailsTextView?.Text?.ToString() ?? string.Empty;
     public string FoundDetailsText => _foundDetailsTextView?.Text?.ToString() ?? string.Empty;
+    public FrameView CueFilesPane => _cueFilesPane;
+    public FrameView SearchResultsPane => _searchResultsPane;
+    public FrameView SourceCueDetailsPane => _sourceCueDetailsPane;
+    public FrameView FoundCueDataPane => _foundCueDataPane;
+    public Label SourcePathLabel => _sourcePathLabel;
     
     private CueData? _currentCueData;
     private List<CueData> _searchResults = new();
@@ -44,7 +49,7 @@ public class MainWindow : Window
             X = 0,
             Y = 0,
             Width = Dim.Percent(20),
-            Height = 9
+            Height = Dim.Fill(21)
         };
 
         var displayFiles = _cueFiles.Select(f => {
@@ -78,7 +83,7 @@ public class MainWindow : Window
             X = Pos.Right(_cueFilesPane),
             Y = 0,
             Width = Dim.Fill(),
-            Height = 9
+            Height = Dim.Fill(21)
         };
         
         _resultsListView = new ListView()
@@ -106,7 +111,7 @@ public class MainWindow : Window
             X = 0,
             Y = Pos.Bottom(_sourcePathLabel),
             Width = Dim.Percent(50),
-            Height = Dim.Fill()
+            Height = 20
         };
 
         _sourceDetailsTextView = new TextView()
@@ -125,7 +130,7 @@ public class MainWindow : Window
             X = Pos.Right(_sourceCueDetailsPane),
             Y = Pos.Bottom(_sourcePathLabel),
             Width = Dim.Fill(),
-            Height = Dim.Fill()
+            Height = 20
         };
 
         _foundDetailsTextView = new TextView()
