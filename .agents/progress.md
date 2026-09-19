@@ -261,3 +261,9 @@
   - Added `ExtractCountryFromFolderName` to extract country codes from folder bracket metadata (e.g. `[1990, JP, WMCP-78]`) when `Country` is not defined in the CUE file.
 - Added 24 unit test cases in [`CueComplete.Tests/StringComparisonTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/StringComparisonTests.cs) (102/102 unit tests passing).
 - Verified `dotnet test`, `dotnet build`, and packaged single executable binary via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
+
+### [2026-09-20 11:20] Patch Release v1.3.1
+- Merged pull request [#10](https://github.com/demoded/CueComplete/pull/10) (`fix/annotated-titles-and-catno-search`) into `master`.
+- Updated version in [`CueComplete.csproj`](file:///D:/git/CueComplete/CueComplete.csproj) to `1.3.1`.
+- Created semantic version tag `v1.3.1` and pushed to GitHub to trigger automated release workflow.
+
