@@ -289,5 +289,12 @@
 - Pushed branch `chore/upgrade-to-dotnet-11` to `origin`.
 - Opened Pull Request [#11](https://github.com/demoded/CueComplete/pull/11) to merge `chore/upgrade-to-dotnet-11` into `master`.
 
+### [2026-11-17 12:07] Merge Pull Request and Publish Release
+- Pulled latest `master` from `origin/master` after merging PR [#11](https://github.com/demoded/CueComplete/pull/11).
+- Deleted merged local feature branch `chore/upgrade-to-dotnet-11`.
+- Verified `dotnet test` (102/102 unit tests passed).
+- Built project in Release configuration via `dotnet build -c Release` (0 errors, 0 warnings).
+- Packaged single-file release executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true` into `bin/Release/net11.0/win-x64/publish/CueComplete.exe`.
+
 
 
