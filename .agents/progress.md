@@ -284,5 +284,10 @@
 - Executed `dotnet build -c Release` (0 errors, 0 warnings).
 - Executed `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true` to verify single-file release packaging.
 
+### [2026-11-17 11:58] Create Feature Branch and Pull Request
+- Created branch `chore/upgrade-to-dotnet-11` and reset local `master` to align with `origin/master`.
+- Pushed branch `chore/upgrade-to-dotnet-11` to `origin`.
+- Opened Pull Request [#11](https://github.com/demoded/CueComplete/pull/11) to merge `chore/upgrade-to-dotnet-11` into `master`.
+
 
 
