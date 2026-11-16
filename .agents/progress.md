@@ -273,5 +273,21 @@
 ### [2026-09-20 11:36] Update Search Logic Documentation in README
 - Updated `Search Logic` section in [`README.md`](file:///D:/git/CueComplete/README.md) to document identifier sanitization (barcodes, catno, country, title annotations), auto-fallback from fast to deep search, MusicBrainz multi-stage lookup (DiscID, FreeDB, barcode, catno, stripped title fallback, Discogs enrichment, country-weighted scoring), Discogs cross-referencing and text fallback, and diacritic/conjunction normalization.
 
+### [2026-11-17 11:42] Upgrade Project to .NET 11
+- Created upgrade plan in [`.agents/plan 20261117T1136.md`](file:///D:/git/CueComplete/.agents/plan%2020261117T1136.md).
+- Updated [`CueComplete.csproj`](file:///D:/git/CueComplete/CueComplete.csproj) target framework from `net10.0` to `net11.0`.
+- Removed redundant `System.Text.Encoding.CodePages` package reference from [`CueComplete.csproj`](file:///D:/git/CueComplete/CueComplete.csproj) to eliminate compiler pruning warning `NU1510`.
+- Updated [`CueComplete.Tests/CueComplete.Tests.csproj`](file:///D:/git/CueComplete/CueComplete.Tests/CueComplete.Tests.csproj) target framework from `net10.0` to `net11.0`.
+- Updated [`.github/workflows/release.yml`](file:///D:/git/CueComplete/.github/workflows/release.yml) .NET setup version from `10.0.x` to `11.0.x`.
+- Updated documentation in [`README.md`](file:///D:/git/CueComplete/README.md) to reference .NET 11 and .NET 11.0 SDK prerequisites.
+- Executed `dotnet test` - all 102 unit tests passed cleanly with 0 failures and 0 warnings.
+- Executed `dotnet build -c Release` (0 errors, 0 warnings).
+- Executed `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true` to verify single-file release packaging.
+
+### [2026-11-17 11:58] Create Feature Branch and Pull Request
+- Created branch `chore/upgrade-to-dotnet-11` and reset local `master` to align with `origin/master`.
+- Pushed branch `chore/upgrade-to-dotnet-11` to `origin`.
+- Opened Pull Request [#11](https://github.com/demoded/CueComplete/pull/11) to merge `chore/upgrade-to-dotnet-11` into `master`.
+
 
 

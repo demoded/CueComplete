@@ -2,7 +2,7 @@
 
 ![CueComplete Screenshot](assets/screenshot.png)
 
-CueComplete is a Terminal User Interface (TUI) application built with .NET 10. It scans a specified directory for `.cue` files and helps you complete or enrich their metadata.
+CueComplete is a Terminal User Interface (TUI) application built with .NET 11. It scans a specified directory for `.cue` files and helps you complete or enrich their metadata.
 
 ## Why I Built This
 
@@ -10,7 +10,7 @@ The primary motivation behind CueComplete was a simple but deeply annoying probl
 
 ## Prerequisites
 
-- [.NET 10.0 SDK](https://dotnet.microsoft.com/download)
+- [.NET 11.0 SDK](https://dotnet.microsoft.com/download)
 
 ## Setup
 
