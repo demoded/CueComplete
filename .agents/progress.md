@@ -302,6 +302,7 @@
 - Updated [`CueComplete.Tests/MainWindowTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/MainWindowTests.cs) to assert that `window.CueFilesPane.Width` equals `Dim.Percent(40)`.
 - Ran `dotnet test` - 102/102 unit tests passed.
 - Built and packaged via `dotnet build -c Release` and `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
+- Created branch `feat/widen-cue-files-pane` and opened Pull Request [#12](https://github.com/demoded/CueComplete/pull/12).
 
 
 
