@@ -144,6 +144,9 @@ public class MainWindowTests
             // Verify top panes have flexible height filling up to 21 lines reserved for bottom and path
             Assert.Equal(Dim.Fill(21), window.CueFilesPane.Height);
             Assert.Equal(Dim.Fill(21), window.SearchResultsPane.Height);
+
+            // Verify left pane width is set to 40%
+            Assert.Equal(Dim.Percent(40), window.CueFilesPane.Width);
         }
         finally
         {

@@ -296,5 +296,12 @@
 - Built project in Release configuration via `dotnet build -c Release` (0 errors, 0 warnings).
 - Packaged single-file release executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true` into `bin/Release/net11.0/win-x64/publish/CueComplete.exe`.
 
+### [2026-11-17 12:24] Increase Cue Files Pane Width
+- Created plan in [`.agents/plan 20261117T1222.md`](file:///D:/git/CueComplete/.agents/plan%2020261117T1222.md).
+- Updated [`UI/MainWindow.cs`](file:///D:/git/CueComplete/UI/MainWindow.cs) to increase `_cueFilesPane` width by 2x from `Dim.Percent(20)` to `Dim.Percent(40)`.
+- Updated [`CueComplete.Tests/MainWindowTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/MainWindowTests.cs) to assert that `window.CueFilesPane.Width` equals `Dim.Percent(40)`.
+- Ran `dotnet test` - 102/102 unit tests passed.
+- Built and packaged via `dotnet build -c Release` and `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
+
 
 

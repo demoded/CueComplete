@@ -48,7 +48,7 @@ public class MainWindow : Window
         {
             X = 0,
             Y = 0,
-            Width = Dim.Percent(20),
+            Width = Dim.Percent(40),
             Height = Dim.Fill(21)
         };
 
