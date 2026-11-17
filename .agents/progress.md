@@ -306,6 +306,7 @@
 - Added comprehensive unit tests in [`CueComplete.Tests/HeaderDiffServiceTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/HeaderDiffServiceTests.cs) and [`CueComplete.Tests/MainWindowTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/MainWindowTests.cs) (114/114 tests passing).
 - Documented Header Diff Viewer feature in [`README.md`](file:///D:/git/CueComplete/README.md).
 - Verified `dotnet test` (all 114 tests passed) and `dotnet build -c Release` (0 errors, 0 warnings).
+- Created branch `feat/cue-header-diff-view` and opened Pull Request [#13](https://github.com/demoded/CueComplete/pull/13).
 
 
 
