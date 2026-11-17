@@ -352,6 +352,8 @@
 - Added unit tests `DiscogsProvider_CatNoSearch_DoesNotFireRequestsForNonMatchingResults_WhenZeroMatchArtist` and `MetadataService_FastSearch_FallsBackToArtistAndAlbum_WhenCatNoReturnsZeroMatches` in [`CueComplete.Tests/StringComparisonTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/StringComparisonTests.cs).
 - Verified `dotnet test` (all 118 unit tests passed).
 - Built Release configuration via `dotnet build -c Release` (0 warnings, 0 errors) and packaged win-x64 single-file executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
+- Created branch `fix/skip-non-matching-catno-fallback` and opened Pull Request [#16](https://github.com/demoded/CueComplete/pull/16).
+
 
 
 
