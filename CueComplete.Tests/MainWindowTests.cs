@@ -150,4 +150,50 @@ public class MainWindowTests
             Application.Shutdown();
         }
     }
+
+    [Fact]
+    public void MainWindow_ShowDiff_WhenNoFiles_DoesNotThrow()
+    {
+        Application.Init(new FakeDriver());
+        try
+        {
+            var dummyFiles = new List<string>();
+            var service = new MetadataService(null, null, null);
+            var window = new MainWindow(dummyFiles, service);
+
+            var ex = Record.Exception(() => window.ShowDiff());
+            Assert.Null(ex);
+        }
+        finally
+        {
+            Application.Shutdown();
+        }
+    }
+
+    [Fact]
+    public void DiffDialog_InitializesWithFormattedText()
+    {
+        Application.Init(new FakeDriver());
+        try
+        {
+            var diff = new HeaderDiffResult
+            {
+                CueFilePath = "album.cue",
+                BackupFilePath = "album.cue.bak",
+                Fields = new List<HeaderFieldDiff>
+                {
+                    new("Artist", "Old Artist", "New Artist", DiffKind.Modified)
+                }
+            };
+
+            var dialog = new DiffDialog(diff);
+            Assert.Contains("Old Artist", dialog.DiffTextView.Text.ToString());
+            Assert.Contains("New Artist", dialog.DiffTextView.Text.ToString());
+            Assert.Contains("[MODIFIED]", dialog.DiffTextView.Text.ToString());
+        }
+        finally
+        {
+            Application.Shutdown();
+        }
+    }
 }
