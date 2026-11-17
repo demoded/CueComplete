@@ -99,7 +99,7 @@ public class DiscogsProvider : IMetadataProvider
         }
 
         // 3. Fallback to Text Search if nothing was found
-        if (discogsIds.Count == 0 && barcodes.Count == 0 && list.Count == 0)
+        if (list.Count == 0)
         {
             string query = $"{sourceData.Artist} {sourceData.Album}".Trim();
             await PerformDiscogsTextSearchAsync(query, sourceData, list);
@@ -181,9 +181,11 @@ public class DiscogsProvider : IMetadataProvider
                 return false;
             }).ToList();
 
-            if (matchingItems.Count > 0)
+            candidateItems = matchingItems;
+
+            if (matchingItems.Count < searchResponse.Results.Count)
             {
-                candidateItems = matchingItems;
+                Log($"Filtered Discogs search results by artist '{sourceData.Artist}': count changed from {searchResponse.Results.Count} to {matchingItems.Count}");
             }
         }
 

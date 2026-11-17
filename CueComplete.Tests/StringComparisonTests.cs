@@ -408,6 +408,154 @@ public class StringComparisonTests
         Assert.Equal("WMC5-78", results[0].CatalogNumber);
     }
 
+    [Fact]
+    public async Task DiscogsProvider_CatNoSearch_DoesNotFireRequestsForNonMatchingResults_WhenZeroMatchArtist()
+    {
+        // Results returned for catno=flac, all by different artists
+        var searchJson = """
+        {
+            "pagination": { "page": 1, "pages": 1, "per_page": 50, "items": 5, "urls": {} },
+            "results": [
+                { "id": 1, "title": "Mo'Vez Lang - Héritiers De La Rue", "catno": "flac", "resource_url": "https://api.discogs.com/releases/1" },
+                { "id": 2, "title": "Leyland Kirby - Bonus Tracks 1", "catno": "flac", "resource_url": "https://api.discogs.com/releases/2" },
+                { "id": 3, "title": "Mac Gayden - Come Along", "catno": "flac", "resource_url": "https://api.discogs.com/releases/3" },
+                { "id": 4, "title": "Can - More Live Music 1975", "catno": "flac", "resource_url": "https://api.discogs.com/releases/4" },
+                { "id": 5, "title": "Shaun Williams - Rocket To The Moon", "catno": "flac", "resource_url": "https://api.discogs.com/releases/5" }
+            ]
+        }
+        """;
+
+        var requestedReleaseUrls = new List<string>();
+        var handler = new TestHttpMessageHandler((request) =>
+        {
+            var uri = request.RequestUri!.ToString();
+            if (uri.Contains("releases/"))
+            {
+                requestedReleaseUrls.Add(uri);
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("{ \"id\": 0, \"title\": \"Test\" }", Encoding.UTF8, "application/json")
+                };
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(searchJson, Encoding.UTF8, "application/json")
+            };
+        });
+
+        var httpClient = new HttpClient(handler);
+        var provider = new DiscogsProvider("fakeKey", "fakeSecret", "fakeToken", httpClient);
+
+        var sourceData = new CueData
+        {
+            Artist = "Appleton",
+            Album = "Everything's Eventual (2003)",
+            CatalogNumber = "flac"
+        };
+
+        var results = new List<CueData>();
+        await provider.PerformDiscogsCatNoSearchAsync(sourceData.CatalogNumber, sourceData, results);
+
+        Assert.Empty(results);
+        // Verify NO detail requests were fired for non-matching artists
+        Assert.Empty(requestedReleaseUrls);
+    }
+
+    [Fact]
+    public async Task MetadataService_FastSearch_FallsBackToArtistAndAlbum_WhenCatNoReturnsZeroMatches()
+    {
+        // When searching catno=flac, return 0 matching results (other artists)
+        var catNoSearchJson = """
+        {
+            "pagination": { "page": 1, "pages": 1, "per_page": 50, "items": 1, "urls": {} },
+            "results": [
+                { "id": 1, "title": "Other Band - Other Album", "catno": "flac", "resource_url": "https://api.discogs.com/releases/1" }
+            ]
+        }
+        """;
+
+        // When searching text "Appleton Everything's Eventual", return the matching release
+        var textSearchJson = """
+        {
+            "pagination": { "page": 1, "pages": 1, "per_page": 50, "items": 1, "urls": {} },
+            "results": [
+                {
+                    "id": 161474,
+                    "title": "Appleton - Everything's Eventual",
+                    "catno": "589 609-2",
+                    "country": "UK",
+                    "year": "2003",
+                    "resource_url": "https://api.discogs.com/releases/161474"
+                }
+            ]
+        }
+        """;
+
+        var releaseJson = """
+        {
+            "id": 161474,
+            "title": "Everything's Eventual",
+            "year": 2003,
+            "artists": [
+                { "name": "Appleton", "anv": "", "id": 1234 }
+            ],
+            "labels": [
+                { "name": "Polydor", "catno": "589 609-2" }
+            ]
+        }
+        """;
+
+        var handler = new TestHttpMessageHandler((request) =>
+        {
+            var uri = request.RequestUri!.ToString();
+            if (uri.Contains("releases/161474"))
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(releaseJson, Encoding.UTF8, "application/json")
+                };
+            }
+            if (uri.Contains("catno=flac"))
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(catNoSearchJson, Encoding.UTF8, "application/json")
+                };
+            }
+            if (uri.Contains("Everything%27s+Eventual") || uri.Contains("Everythings+Eventual"))
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(textSearchJson, Encoding.UTF8, "application/json")
+                };
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("""{ "results": [] }""", Encoding.UTF8, "application/json")
+            };
+        });
+
+        var httpClient = new HttpClient(handler);
+        var discogsProvider = new DiscogsProvider("fakeKey", "fakeSecret", "fakeToken", httpClient);
+        var metadataService = new MetadataService(discogsProvider);
+
+        var sourceData = new CueData
+        {
+            Artist = "Appleton",
+            Album = "Everything's Eventual (2003)",
+            CatalogNumber = "flac"
+        };
+
+        var results = await metadataService.SearchReleasesAsync(sourceData, deepSearch: false);
+
+        Assert.Single(results);
+        Assert.Equal("Appleton", results[0].Artist);
+        Assert.Equal("Everything's Eventual", results[0].Album);
+        Assert.Equal("589 609-2", results[0].CatalogNumber);
+    }
+
     private class TestHttpMessageHandler : HttpMessageHandler
     {
         private readonly Func<HttpRequestMessage, HttpResponseMessage> _responder;
