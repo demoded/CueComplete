@@ -361,6 +361,40 @@
 - Built project in Release configuration via `dotnet build -c Release` (0 warnings, 0 errors).
 - Packaged single-file release executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true` into `bin/Release/net11.0/win-x64/publish/CueComplete.exe`.
 
+### [2026-11-17 19:21] Plan Match Artist Acronyms in Search & String Extensions
+- Created plan in [`.agents/plan 20261117T1921.md`](file:///D:/git/CueComplete/.agents/plan%2020261117T1921.md) to implement bidirectional acronym/initialism matching in `StringExtensions.MatchesArtist` and add acronym text search fallback in `MetadataService` and `DiscogsProvider`.
+
+### [2026-11-17 19:35] Implement Artist Acronym Matching and Search Fallback
+- Updated [`Core/StringExtensions.cs`](file:///D:/git/CueComplete/Core/StringExtensions.cs):
+  - Added `IsAcronymMatch` to support bidirectional acronym matching (handling 2-6 letter abbreviations, uppercase names, dotted abbreviations like `M.P.`, and word initials with or without common stopwords).
+  - Enhanced `NormalizeArtist` to strip Discogs numeric suffixes (e.g. `(22)`).
+  - Added `GetAcronym` helper to generate standard acronym from multi-word artist names.
+- Updated [`Core/Metadata/DiscogsProvider.cs`](file:///D:/git/CueComplete/Core/Metadata/DiscogsProvider.cs) and [`Core/MetadataService.cs`](file:///D:/git/CueComplete/Core/MetadataService.cs):
+  - Added acronym search query fallback (`"{acronym} {album}"`) when spelled-out artist and album search returns 0 results.
+- Added comprehensive unit tests in [`CueComplete.Tests/StringComparisonTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/StringComparisonTests.cs):
+  - `MatchesArtist` tests covering `MP` <-> `Metal Priest`, `MP (22)`, `M.P.`, `ELO`, `OMD`, `BOC`, `ELP`, Cyrillic `ЧК`, and negative cases (`Michael Jackson`, `Madonna`, `Metallica`, etc.).
+  - `GetAcronym` evaluation tests.
+  - `DiscogsProvider_CatNoSearch_MatchesArtistAcronym_MP_ForMetalPriest` integration test verifying `MP (22) - Get It Now` is matched for `Metal Priest` on CatNo `73053`.
+  - `MetadataService_FastSearch_FallsBackToAcronym_WhenTextSearchYieldsZeroMatches` integration test verifying acronym fallback finds the target release.
+- Verified all 145 unit tests passed via `dotnet test`.
+- Built Release configuration via `dotnet build -c Release` (0 warnings, 0 errors) and packaged win-x64 single-file executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
+- Created branch `fix/artist-acronym-matching` and opened Pull Request [#17](https://github.com/demoded/CueComplete/pull/17).
+
+### [2026-11-17 19:52] Implement Album Matching in Discogs Search Filtering
+- Updated [`Core/StringExtensions.cs`](file:///D:/git/CueComplete/Core/StringExtensions.cs):
+  - Added `MatchesAlbum` supporting exact, stripped-annotation, and normalized bidirectional album title comparison.
+- Updated [`Core/Metadata/DiscogsProvider.cs`](file:///D:/git/CueComplete/Core/Metadata/DiscogsProvider.cs):
+  - Updated candidate pre-filtering and post-fetch filtering to evaluate `MatchesArtist || MatchesAlbum`, ensuring releases whose album matches the query are retained even if the artist name varies or is an alias.
+- Added unit tests in [`CueComplete.Tests/StringComparisonTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/StringComparisonTests.cs):
+  - `MatchesAlbum_EvaluatesCorrectly` testing exact, stripped, and normalized title comparisons.
+  - `DiscogsProvider_CatNoSearch_MatchesAlbum_WhenArtistDiffers` verifying a candidate is matched when album matches despite differing artist.
+- Verified all 156 unit tests passed via `dotnet test`.
+- Built Release configuration via `dotnet build -c Release` (0 warnings, 0 errors) and packaged win-x64 single-file executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
+
+
+
+
+
 
 
 

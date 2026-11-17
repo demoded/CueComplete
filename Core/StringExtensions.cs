@@ -36,9 +36,16 @@ public static class StringExtensions
         return InvariantCompareInfo.IndexOf(source, target, DiacriticAndCaseInsensitiveOptions) >= 0;
     }
 
+    private static readonly HashSet<string> StopWords = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "a", "an", "the", "and", "or", "of", "in", "on", "at", "by", "for", "with", "to",
+        "de", "der", "die", "das", "la", "le", "les", "du", "des", "und", "et"
+    };
+
     /// <summary>
     /// Checks whether candidate and target artist names match bidirectionally (one contains the other),
-    /// ignoring casing, diacritics/accents (including Cyrillic 'ё' and 'е'), and normalizing '&' / 'and'.
+    /// ignoring casing, diacritics/accents (including Cyrillic 'ё' and 'е'), normalizing '&' / 'and',
+    /// and checking for acronym/initialism matches (e.g. "MP" and "Metal Priest", "ELO" and "Electric Light Orchestra").
     /// </summary>
     public static bool MatchesArtist(string? candidate, string? target)
     {
@@ -57,15 +64,143 @@ public static class StringExtensions
         var candNormalized = NormalizeArtist(candTrimmed);
         var targetNormalized = NormalizeArtist(targetTrimmed);
 
+        if (InvariantCompareInfo.IndexOf(candNormalized, targetNormalized, DiacriticAndCaseInsensitiveOptions) >= 0
+            || InvariantCompareInfo.IndexOf(targetNormalized, candNormalized, DiacriticAndCaseInsensitiveOptions) >= 0)
+        {
+            return true;
+        }
+
+        return IsAcronymMatch(candNormalized, targetNormalized);
+    }
+
+    /// <summary>
+    /// Checks whether candidate and target album titles match bidirectionally (one contains the other),
+    /// ignoring casing, diacritics/accents, trailing annotations (e.g. "(Japan)", "[Deluxe Edition]"),
+    /// and normalizing '&' / 'and'.
+    /// </summary>
+    public static bool MatchesAlbum(string? candidate, string? target)
+    {
+        if (string.IsNullOrWhiteSpace(candidate) || string.IsNullOrWhiteSpace(target))
+            return false;
+
+        var candTrimmed = candidate.Trim();
+        var targetTrimmed = target.Trim();
+
+        if (InvariantCompareInfo.Compare(candTrimmed, targetTrimmed, DiacriticAndCaseInsensitiveOptions) == 0)
+            return true;
+
+        var candStripped = StripTitleAnnotations(candTrimmed);
+        var targetStripped = StripTitleAnnotations(targetTrimmed);
+
+        if (InvariantCompareInfo.Compare(candStripped, targetStripped, DiacriticAndCaseInsensitiveOptions) == 0)
+            return true;
+
+        var candNormalized = NormalizeArtist(candStripped);
+        var targetNormalized = NormalizeArtist(targetStripped);
+
+        if (InvariantCompareInfo.Compare(candNormalized, targetNormalized, DiacriticAndCaseInsensitiveOptions) == 0)
+            return true;
+
         return InvariantCompareInfo.IndexOf(candNormalized, targetNormalized, DiacriticAndCaseInsensitiveOptions) >= 0
             || InvariantCompareInfo.IndexOf(targetNormalized, candNormalized, DiacriticAndCaseInsensitiveOptions) >= 0;
     }
 
     private static string NormalizeArtist(string artist)
     {
-        var normalized = Regex.Replace(artist, @"\s+&\s+", " and ", RegexOptions.IgnoreCase);
+        var normalized = Regex.Replace(artist, @"\s*\(\d+\)$", "").Trim();
+        normalized = Regex.Replace(normalized, @"\s+&\s+", " and ", RegexOptions.IgnoreCase);
         normalized = Regex.Replace(normalized, @"\s+\+\s+", " and ", RegexOptions.IgnoreCase);
         return normalized;
+    }
+
+    /// <summary>
+    /// Checks if one string is an acronym/initialism of the other (e.g. "MP" and "Metal Priest", "ELO" and "Electric Light Orchestra").
+    /// </summary>
+    public static bool IsAcronymMatch(string? str1, string? str2)
+    {
+        if (string.IsNullOrWhiteSpace(str1) || string.IsNullOrWhiteSpace(str2))
+            return false;
+
+        return CheckAcronym(str1, str2) || CheckAcronym(str2, str1);
+    }
+
+    private static bool CheckAcronym(string acronymCandidate, string wordsCandidate)
+    {
+        var cleanAcronym = Regex.Replace(acronymCandidate.Trim(), @"[\.\s\-_/]", "");
+
+        // Acronyms must be between 2 and 6 letters and contain only letters
+        if (cleanAcronym.Length < 2 || cleanAcronym.Length > 6 || !cleanAcronym.All(char.IsLetter))
+            return false;
+
+        // An acronym candidate must be either 2 characters long (e.g. "MP", "DK"),
+        // contain dots (e.g. "M.P.", "U.D.O."), or be entirely uppercase (e.g. "ELO", "BOC", "RHCP").
+        bool isLikelyAcronym = cleanAcronym.Length == 2 ||
+                               acronymCandidate.Contains('.') ||
+                               acronymCandidate.All(c => !char.IsLetter(c) || char.IsUpper(c));
+        if (!isLikelyAcronym)
+            return false;
+
+        var words = Regex.Split(wordsCandidate.Trim(), @"[\s\-_/,\.]+")
+            .Where(w => !string.IsNullOrWhiteSpace(w))
+            .Select(w => Regex.Replace(w, @"^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$", ""))
+            .Where(w => !string.IsNullOrWhiteSpace(w) && char.IsLetter(w[0]))
+            .ToList();
+
+        if (words.Count < 2)
+            return false;
+
+        // 1. Check matching initials of all words
+        if (words.Count == cleanAcronym.Length && MatchesInitials(cleanAcronym, words))
+            return true;
+
+        // 2. Check matching initials excluding common stopwords
+        var nonStopWords = words.Where(w => !StopWords.Contains(w)).ToList();
+        if (nonStopWords.Count >= 2 && nonStopWords.Count == cleanAcronym.Length && MatchesInitials(cleanAcronym, nonStopWords))
+            return true;
+
+        return false;
+    }
+
+    private static bool MatchesInitials(string cleanAcronym, List<string> words)
+    {
+        for (int i = 0; i < cleanAcronym.Length; i++)
+        {
+            string acronymChar = cleanAcronym[i].ToString();
+            string wordInitial = words[i][0].ToString();
+
+            if (InvariantCompareInfo.Compare(acronymChar, wordInitial, DiacriticAndCaseInsensitiveOptions) != 0)
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Generates a standard acronym (initialism) from a multi-word artist name (e.g. "Metal Priest" -> "MP", "Electric Light Orchestra" -> "ELO").
+    /// Returns null if artist name does not have 2-6 words.
+    /// </summary>
+    public static string? GetAcronym(string? artist)
+    {
+        if (string.IsNullOrWhiteSpace(artist))
+            return null;
+
+        var normalized = NormalizeArtist(artist);
+        var words = Regex.Split(normalized, @"[\s\-_/,\.]+")
+            .Where(w => !string.IsNullOrWhiteSpace(w))
+            .Select(w => Regex.Replace(w, @"^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$", ""))
+            .Where(w => !string.IsNullOrWhiteSpace(w) && char.IsLetter(w[0]))
+            .ToList();
+
+        if (words.Count < 2)
+            return null;
+
+        var nonStopWords = words.Where(w => !StopWords.Contains(w)).ToList();
+        var targetWords = (nonStopWords.Count >= 2 && nonStopWords.Count <= 6) ? nonStopWords : words;
+
+        if (targetWords.Count < 2 || targetWords.Count > 6)
+            return null;
+
+        return new string(targetWords.Select(w => char.ToUpperInvariant(w[0])).ToArray());
     }
 
     /// <summary>
