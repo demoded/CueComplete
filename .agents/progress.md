@@ -313,6 +313,12 @@
 - Deleted merged local feature branch `feat/cue-header-diff-view`.
 - Verified `dotnet test` - all 114 unit tests passed.
 
+### [2026-11-17 15:37] Update Documentation and Application Screenshot
+- Created plan in [`.agents/plan 20261117T1536.md`](file:///D:/git/CueComplete/.agents/plan%2020261117T1536.md).
+- Updated [`README.md`](file:///D:/git/CueComplete/README.md) with a comprehensive Keyboard Shortcuts table and enhanced descriptions for automatic backups and Header Diff Viewer.
+- Updated application screenshot [`assets/screenshot.png`](file:///D:/git/CueComplete/assets/screenshot.png) capturing the updated layout and status bar actions.
+- Created branch `docs/update-readme-and-screenshot` and opened Pull Request [#14](https://github.com/demoded/CueComplete/pull/14).
+
 ### [2026-11-17 16:11] Plan Remove Discogs Search 5-Item Limit
 - Created plan in [`.agents/plan 20261117T1611.md`](file:///D:/git/CueComplete/.agents/plan%2020261117T1611.md) to remove the premature `.Take(5)` limitation in `DiscogsProvider.PerformDiscogsSearchAsync` and pre-filter search candidates by artist when available.
 
@@ -323,8 +329,3 @@
 - Verified all 116 unit tests passed via `dotnet test`.
 - Built Release configuration via `dotnet build -c Release` (0 warnings, 0 errors) and packaged win-x64 single-file executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
 - Created branch `fix/discogs-search-result-limit` and opened Pull Request [#15](https://github.com/demoded/CueComplete/pull/15).
-
-
-
-
-
