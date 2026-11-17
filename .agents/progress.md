@@ -317,6 +317,7 @@
 - Created plan in [`.agents/plan 20261117T1536.md`](file:///D:/git/CueComplete/.agents/plan%2020261117T1536.md).
 - Updated [`README.md`](file:///D:/git/CueComplete/README.md) with a comprehensive Keyboard Shortcuts table and enhanced descriptions for automatic backups and Header Diff Viewer.
 - Updated application screenshot [`assets/screenshot.png`](file:///D:/git/CueComplete/assets/screenshot.png) capturing the updated layout and status bar actions.
+- Created branch `docs/update-readme-and-screenshot` and opened Pull Request [#14](https://github.com/demoded/CueComplete/pull/14).
 
 
 
