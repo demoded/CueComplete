@@ -163,8 +163,31 @@ public class DiscogsProvider : IMetadataProvider
         if (searchResponse?.Results == null || searchResponse.Results.Count == 0) return;
 
         var tasks = new List<Task>();
+        var candidateItems = searchResponse.Results.AsEnumerable();
 
-        foreach (var item in searchResponse.Results.Take(5))
+        if (!string.IsNullOrWhiteSpace(sourceData.Artist))
+        {
+            var matchingItems = searchResponse.Results.Where(item =>
+            {
+                if (item.Title != null && item.Title.Contains(" - "))
+                {
+                    var parts = item.Title.Split(new[] { " - " }, 2, StringSplitOptions.None);
+                    if (parts.Length == 2)
+                    {
+                        var artist = CleanDiscogsString(parts[0].Trim());
+                        return StringExtensions.MatchesArtist(artist, sourceData.Artist);
+                    }
+                }
+                return false;
+            }).ToList();
+
+            if (matchingItems.Count > 0)
+            {
+                candidateItems = matchingItems;
+            }
+        }
+
+        foreach (var item in candidateItems)
         {
             var data = new CueData
             {

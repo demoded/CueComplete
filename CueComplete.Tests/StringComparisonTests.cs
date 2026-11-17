@@ -175,6 +175,154 @@ public class StringComparisonTests
     }
 
     [Fact]
+    public async Task DiscogsProvider_CatNoSearch_FindsMatchBeyondFirst5Items()
+    {
+        // Simulate Discogs search returning 11 results where items 0-9 are other artists and item 10 is the target match
+        var searchJson = """
+        {
+            "pagination": { "page": 1, "pages": 1, "per_page": 50, "items": 11, "urls": {} },
+            "results": [
+                { "id": 1, "title": "Artist One - Album 1", "catno": "MOG002", "resource_url": "https://api.discogs.com/releases/1" },
+                { "id": 2, "title": "Artist Two - Album 2", "catno": "SMOG002", "resource_url": "https://api.discogs.com/releases/2" },
+                { "id": 3, "title": "Artist Three - Album 3", "catno": "MOG 002", "resource_url": "https://api.discogs.com/releases/3" },
+                { "id": 4, "title": "Artist Four - Album 4", "catno": "SMOG 002", "resource_url": "https://api.discogs.com/releases/4" },
+                { "id": 5, "title": "Artist Five - Album 5", "catno": "SMOG 002", "resource_url": "https://api.discogs.com/releases/5" },
+                { "id": 6, "title": "Artist Six - Album 6", "catno": "SMOG 002", "resource_url": "https://api.discogs.com/releases/6" },
+                { "id": 7, "title": "Artist Seven - Album 7", "catno": "SMOG002LP", "resource_url": "https://api.discogs.com/releases/7" },
+                { "id": 8, "title": "Artist Eight - Album 8", "catno": "MOG 001", "resource_url": "https://api.discogs.com/releases/8" },
+                { "id": 9, "title": "Artist Nine - Album 9", "catno": "12\" MOG 001", "resource_url": "https://api.discogs.com/releases/9" },
+                { "id": 10, "title": "Artist Ten - Album 10", "catno": "MOG-002", "resource_url": "https://api.discogs.com/releases/10" },
+                {
+                    "id": 26057443,
+                    "title": "Marco Garau's Magic Opera - Battle Of Ice",
+                    "catno": "MOG002",
+                    "country": "Italy",
+                    "year": "2023",
+                    "resource_url": "https://api.discogs.com/releases/26057443"
+                }
+            ]
+        }
+        """;
+
+        var releaseJson = """
+        {
+            "id": 26057443,
+            "title": "Battle Of Ice",
+            "year": 2023,
+            "artists": [
+                {
+                    "name": "Marco Garau's Magic Opera",
+                    "anv": "",
+                    "id": 123456
+                }
+            ],
+            "labels": [
+                {
+                    "name": "Self-released",
+                    "catno": "MOG002"
+                }
+            ]
+        }
+        """;
+
+        var requestedReleaseUrls = new List<string>();
+        var handler = new TestHttpMessageHandler((request) =>
+        {
+            var uri = request.RequestUri!.ToString();
+            if (uri.Contains("releases/"))
+            {
+                requestedReleaseUrls.Add(uri);
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(releaseJson, Encoding.UTF8, "application/json")
+                };
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(searchJson, Encoding.UTF8, "application/json")
+            };
+        });
+
+        var httpClient = new HttpClient(handler);
+        var provider = new DiscogsProvider("fakeKey", "fakeSecret", "fakeToken", httpClient);
+
+        var sourceData = new CueData
+        {
+            Artist = "Marco Garau's Magic Opera",
+            Album = "Battle of Ice",
+            CatalogNumber = "MOG002"
+        };
+
+        var results = new List<CueData>();
+        await provider.PerformDiscogsCatNoSearchAsync(sourceData.CatalogNumber, sourceData, results);
+
+        Assert.Single(results);
+        Assert.Equal("Marco Garau's Magic Opera", results[0].Artist);
+        Assert.Equal("Battle Of Ice", results[0].Album);
+        Assert.Equal("MOG002", results[0].CatalogNumber);
+
+        // Verify only the matching release was fetched, avoiding wasteful requests for the other 10 candidates
+        Assert.Single(requestedReleaseUrls);
+        Assert.Contains("releases/26057443", requestedReleaseUrls[0]);
+    }
+
+    [Fact]
+    public async Task DiscogsProvider_BarcodeSearch_ProcessesAllResultsBeyondFirst5Items_WhenArtistNotSpecified()
+    {
+        // 8 releases returned by barcode search with no artist specified in sourceData
+        var searchJson = """
+        {
+            "pagination": { "page": 1, "pages": 1, "per_page": 50, "items": 8, "urls": {} },
+            "results": [
+                { "id": 1, "title": "Band A - Album A", "catno": "CAT1", "resource_url": "https://api.discogs.com/releases/1" },
+                { "id": 2, "title": "Band B - Album B", "catno": "CAT2", "resource_url": "https://api.discogs.com/releases/2" },
+                { "id": 3, "title": "Band C - Album C", "catno": "CAT3", "resource_url": "https://api.discogs.com/releases/3" },
+                { "id": 4, "title": "Band D - Album D", "catno": "CAT4", "resource_url": "https://api.discogs.com/releases/4" },
+                { "id": 5, "title": "Band E - Album E", "catno": "CAT5", "resource_url": "https://api.discogs.com/releases/5" },
+                { "id": 6, "title": "Band F - Album F", "catno": "CAT6", "resource_url": "https://api.discogs.com/releases/6" },
+                { "id": 7, "title": "Band G - Album G", "catno": "CAT7", "resource_url": "https://api.discogs.com/releases/7" },
+                { "id": 8, "title": "Band H - Album H", "catno": "CAT8", "resource_url": "https://api.discogs.com/releases/8" }
+            ]
+        }
+        """;
+
+        var requestedReleaseUrls = new List<string>();
+        var handler = new TestHttpMessageHandler((request) =>
+        {
+            var uri = request.RequestUri!.ToString();
+            if (uri.Contains("releases/"))
+            {
+                requestedReleaseUrls.Add(uri);
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("{ \"id\": 0, \"title\": \"Test\" }", Encoding.UTF8, "application/json")
+                };
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(searchJson, Encoding.UTF8, "application/json")
+            };
+        });
+
+        var httpClient = new HttpClient(handler);
+        var provider = new DiscogsProvider("fakeKey", "fakeSecret", "fakeToken", httpClient);
+
+        var sourceData = new CueData
+        {
+            Barcode = "123456789012"
+        };
+
+        var results = new List<CueData>();
+        await provider.PerformDiscogsBarcodeSearchAsync(sourceData.Barcode, sourceData, results);
+
+        // All 8 items are processed because the 5-item limit was removed
+        Assert.Equal(8, results.Count);
+        Assert.Equal(8, requestedReleaseUrls.Count);
+    }
+
+    [Fact]
     public async Task DiscogsProvider_SearchAsync_FallsBackToTextSearch_AndStrippedTitle_WhenCatNoReturnsEmpty()
     {
         var releaseJson = """
