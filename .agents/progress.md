@@ -354,6 +354,14 @@
 - Built Release configuration via `dotnet build -c Release` (0 warnings, 0 errors) and packaged win-x64 single-file executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
 - Created branch `fix/skip-non-matching-catno-fallback` and opened Pull Request [#16](https://github.com/demoded/CueComplete/pull/16).
 
+### [2026-11-17 19:04] Merge Pull Request #16 to Master & Build
+- Pulled latest `master` from `origin/master` with merged PR [#16](https://github.com/demoded/CueComplete/pull/16).
+- Cleaned up local merged branch `fix/skip-non-matching-catno-fallback`.
+- Verified `dotnet test` (all 118 unit tests passed).
+- Built project in Release configuration via `dotnet build -c Release` (0 warnings, 0 errors).
+- Packaged single-file release executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true` into `bin/Release/net11.0/win-x64/publish/CueComplete.exe`.
+
+
 
 
 
