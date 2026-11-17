@@ -296,5 +296,16 @@
 - Built project in Release configuration via `dotnet build -c Release` (0 errors, 0 warnings).
 - Packaged single-file release executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true` into `bin/Release/net11.0/win-x64/publish/CueComplete.exe`.
 
+### [2026-11-17 12:46] Plan Header Diff View Feature
+- Created feature plan in [`.agents/plan 20261117T1246.md`](file:///D:/git/CueComplete/.agents/plan%2020261117T1246.md) detailing the architecture and implementation for comparing `.cue` header metadata with `.cue.bak` backups while ignoring track details.
+
+### [2026-11-17 13:05] Implement Header Diff View Feature
+- Created [`Core/HeaderDiffService.cs`](file:///D:/git/CueComplete/Core/HeaderDiffService.cs) to compare current `.cue` header fields with `.cue.bak` backup files while explicitly ignoring track information.
+- Created [`UI/DiffDialog.cs`](file:///D:/git/CueComplete/UI/DiffDialog.cs) modal dialog presenting formatted diff table with status badges (`[MODIFIED]`, `[ADDED]`, `[REMOVED]`) and keyboard dismissal.
+- Updated [`UI/MainWindow.cs`](file:///D:/git/CueComplete/UI/MainWindow.cs) to add `~D~ Diff` in `StatusBar`, handle `D`/`d` keyboard shortcut in `RootKeyEvent`, and implement `ShowDiff()` with friendly missing backup notifications.
+- Added comprehensive unit tests in [`CueComplete.Tests/HeaderDiffServiceTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/HeaderDiffServiceTests.cs) and [`CueComplete.Tests/MainWindowTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/MainWindowTests.cs) (114/114 tests passing).
+- Documented Header Diff Viewer feature in [`README.md`](file:///D:/git/CueComplete/README.md).
+- Verified `dotnet test` (all 114 tests passed) and `dotnet build -c Release` (0 errors, 0 warnings).
+
 
 

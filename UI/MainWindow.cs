@@ -162,6 +162,7 @@ public class MainWindow : Window
                     LoadCueFile(_cueFiles[_fileListView.SelectedItem], deepSearch: true);
                 }
             }),
+            new StatusItem(Key.Null, "~D~ Diff", () => ShowDiff()),
             new StatusItem(Key.CtrlMask | Key.L, "~^L~ Toggle Log", () => ToggleLogging())
         });
 
@@ -173,6 +174,14 @@ public class MainWindow : Window
                 {
                     LoadCueFile(_cueFiles[_fileListView.SelectedItem], deepSearch: true);
                     return true; // Handled
+                }
+            }
+            if (e.Key == (Key)'d' || e.Key == (Key)'D' || e.Key == Key.D)
+            {
+                if (_fileListView.SelectedItem >= 0 && _fileListView.SelectedItem < _cueFiles.Count)
+                {
+                    ShowDiff();
+                    return true;
                 }
             }
             if (e.Key == (Key.CtrlMask | Key.L))
@@ -196,6 +205,35 @@ public class MainWindow : Window
         MetadataService.IsLoggingEnabled = !MetadataService.IsLoggingEnabled;
         var status = MetadataService.IsLoggingEnabled ? "enabled" : "disabled";
         MessageBox.Query("Logging", $"Application logging is now {status}.", "OK");
+    }
+
+    public void ShowDiff()
+    {
+        if (_fileListView.SelectedItem < 0 || _fileListView.SelectedItem >= _cueFiles.Count)
+        {
+            return;
+        }
+
+        var filePath = _cueFiles[_fileListView.SelectedItem];
+        var backupPath = filePath + ".bak";
+
+        if (!File.Exists(backupPath))
+        {
+            MessageBox.Query("No Backup", $"No backup file (.bak) found for:\n{Path.GetFileName(filePath)}", "OK");
+            return;
+        }
+
+        try
+        {
+            var diff = HeaderDiffService.CompareFiles(filePath);
+            var dialog = new DiffDialog(diff);
+            Application.Run(dialog);
+        }
+        catch (Exception ex)
+        {
+            _metadataService.Log($"Failed to open diff for '{filePath}': {ex.Message}");
+            MessageBox.ErrorQuery("Diff Error", $"Failed to generate diff:\n{ex.Message}", "OK");
+        }
     }
 
     private void FileListView_OpenSelectedItem(ListViewItemEventArgs obj)

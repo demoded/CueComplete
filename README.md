@@ -46,6 +46,7 @@ dotnet run -- "C:\Path\To\Your\Music\Folder"
 - **Terminal GUI**: Easy-to-use keyboard-driven interface using `Terminal.Gui`.
 - **Recursive Scanning**: Automatically finds all `.cue` files in the given directory and its subdirectories.
 - **Metadata Enrichment**: Connects to external services to fetch accurate track and album information.
+- **Header Diff Viewer**: Press `D` to inspect metadata differences between the current `.cue` header and its `.bak` backup file.
 
 ## Search Logic
 
