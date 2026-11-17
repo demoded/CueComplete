@@ -95,6 +95,17 @@ public class MetadataService
                             await _discogsProvider.PerformDiscogsTextSearchAsync(fallbackQuery, sourceData, results);
                         }
                     }
+
+                    if (results.Count == 0)
+                    {
+                        var acronym = StringExtensions.GetAcronym(sourceData.Artist);
+                        if (!string.IsNullOrWhiteSpace(acronym))
+                        {
+                            string acronymQuery = $"{acronym} {sourceData.Album}".Trim();
+                            Log($"Fast search returned 0 results. Retrying with artist acronym query: '{acronymQuery}'");
+                            await _discogsProvider.PerformDiscogsTextSearchAsync(acronymQuery, sourceData, results);
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {

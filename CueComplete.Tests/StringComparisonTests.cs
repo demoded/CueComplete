@@ -39,6 +39,23 @@ public class StringComparisonTests
     [InlineData("Simon & Garfunkel", "Simon and Garfunkel", true)]
     [InlineData("Kool & The Gang", "Kool and the Gang", true)]
     [InlineData("Motörhead", "Motorhead", true)]
+    [InlineData("MP", "Metal Priest", true)]
+    [InlineData("Metal Priest", "MP", true)]
+    [InlineData("MP (22)", "Metal Priest", true)]
+    [InlineData("Metal Priest", "MP (22)", true)]
+    [InlineData("M.P.", "Metal Priest", true)]
+    [InlineData("Metal Priest", "M.P.", true)]
+    [InlineData("ELO", "Electric Light Orchestra", true)]
+    [InlineData("Electric Light Orchestra", "ELO", true)]
+    [InlineData("OMD", "Orchestral Manoeuvres in the Dark", true)]
+    [InlineData("BOC", "Blue Öyster Cult", true)]
+    [InlineData("ELP", "Emerson, Lake & Palmer", true)]
+    [InlineData("ЧК", "Чёрный Кофе", true)]
+    [InlineData("MP", "Michael Jackson", false)]
+    [InlineData("MP", "Madonna", false)]
+    [InlineData("War", "We Are Right", false)]
+    [InlineData("Metallica", "Megadeth", false)]
+    [InlineData("Judas Priest", "Metal Priest", false)]
     [InlineData("Daevid Allen", "Joan Jett", false)]
     [InlineData(null, "Черный Кофе", false)]
     [InlineData("Черный Кофе", null, false)]
@@ -46,6 +63,21 @@ public class StringComparisonTests
     public void MatchesArtist_EvaluatesCorrectly(string? candidate, string? target, bool expected)
     {
         var result = StringExtensions.MatchesArtist(candidate, target);
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData("Metal Priest", "MP")]
+    [InlineData("Electric Light Orchestra", "ELO")]
+    [InlineData("Orchestral Manoeuvres in the Dark", "OMD")]
+    [InlineData("Crosby, Stills, Nash & Young", "CSNY")]
+    [InlineData("Blue Öyster Cult", "BÖC")]
+    [InlineData("Madonna", null)]
+    [InlineData("", null)]
+    [InlineData(null, null)]
+    public void GetAcronym_EvaluatesCorrectly(string? input, string? expected)
+    {
+        var result = StringExtensions.GetAcronym(input);
         Assert.Equal(expected, result);
     }
 
@@ -554,6 +586,181 @@ public class StringComparisonTests
         Assert.Equal("Appleton", results[0].Artist);
         Assert.Equal("Everything's Eventual", results[0].Album);
         Assert.Equal("589 609-2", results[0].CatalogNumber);
+    }
+
+    [Fact]
+    public async Task DiscogsProvider_CatNoSearch_MatchesArtistAcronym_MP_ForMetalPriest()
+    {
+        var searchJson = """
+        {
+            "pagination": { "page": 1, "pages": 1, "per_page": 50, "items": 3, "urls": {} },
+            "results": [
+                { "id": 1, "title": "DJ RPM - Yo Hey! The Bass", "catno": "73053", "resource_url": "https://api.discogs.com/releases/1" },
+                { "id": 2, "title": "Dave Eggar - Left Of Blue", "catno": "73053", "resource_url": "https://api.discogs.com/releases/2" },
+                {
+                    "id": 4877242,
+                    "title": "MP (22) - Get It Now",
+                    "catno": "73053",
+                    "country": "Russia",
+                    "resource_url": "https://api.discogs.com/releases/4877242"
+                }
+            ]
+        }
+        """;
+
+        var releaseJson = """
+        {
+            "id": 4877242,
+            "title": "Get It Now",
+            "year": 1987,
+            "country": "Russia",
+            "artists": [
+                {
+                    "name": "MP (22)",
+                    "anv": "",
+                    "id": 6147288
+                }
+            ],
+            "labels": [
+                {
+                    "name": "Steps Records",
+                    "catno": "73053"
+                }
+            ]
+        }
+        """;
+
+        var handler = new TestHttpMessageHandler((request) =>
+        {
+            if (request.RequestUri!.ToString().Contains("releases/4877242"))
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(releaseJson, Encoding.UTF8, "application/json")
+                };
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(searchJson, Encoding.UTF8, "application/json")
+            };
+        });
+
+        var httpClient = new HttpClient(handler);
+        var provider = new DiscogsProvider("fakeKey", "fakeSecret", "fakeToken", httpClient);
+
+        var sourceData = new CueData
+        {
+            Artist = "Metal Priest",
+            Album = "Get It Now",
+            CatalogNumber = "73053"
+        };
+
+        var results = new List<CueData>();
+        await provider.PerformDiscogsCatNoSearchAsync(sourceData.CatalogNumber, sourceData, results);
+
+        Assert.Single(results);
+        Assert.Equal("MP", results[0].Artist);
+        Assert.Equal("Get It Now", results[0].Album);
+        Assert.Equal("73053", results[0].CatalogNumber);
+        Assert.Equal("Steps Records", results[0].Label);
+    }
+
+    [Fact]
+    public async Task MetadataService_FastSearch_FallsBackToAcronym_WhenTextSearchYieldsZeroMatches()
+    {
+        var textSearchNoMatchJson = """
+        {
+            "pagination": { "page": 1, "pages": 1, "per_page": 50, "items": 1, "urls": {} },
+            "results": [
+                { "id": 999, "title": "Various - Masters Of Metal", "catno": "HAM 172", "resource_url": "https://api.discogs.com/releases/999" }
+            ]
+        }
+        """;
+
+        var acronymSearchJson = """
+        {
+            "pagination": { "page": 1, "pages": 1, "per_page": 50, "items": 1, "urls": {} },
+            "results": [
+                {
+                    "id": 4877242,
+                    "title": "MP (22) - Get It Now",
+                    "catno": "73053",
+                    "country": "Russia",
+                    "resource_url": "https://api.discogs.com/releases/4877242"
+                }
+            ]
+        }
+        """;
+
+        var releaseJson = """
+        {
+            "id": 4877242,
+            "title": "Get It Now",
+            "year": 1987,
+            "artists": [
+                {
+                    "name": "MP (22)",
+                    "anv": "",
+                    "id": 6147288
+                }
+            ],
+            "labels": [
+                {
+                    "name": "Steps Records",
+                    "catno": "73053"
+                }
+            ]
+        }
+        """;
+
+        var handler = new TestHttpMessageHandler((request) =>
+        {
+            var uri = request.RequestUri!.ToString();
+            if (uri.Contains("releases/4877242"))
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(releaseJson, Encoding.UTF8, "application/json")
+                };
+            }
+            if (uri.Contains("MP+Get+It+Now") || uri.Contains("MP%20Get%20It%20Now"))
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(acronymSearchJson, Encoding.UTF8, "application/json")
+                };
+            }
+            if (uri.Contains("Metal+Priest+Get+It+Now") || uri.Contains("Metal%20Priest%20Get%20It%20Now"))
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(textSearchNoMatchJson, Encoding.UTF8, "application/json")
+                };
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("""{ "results": [] }""", Encoding.UTF8, "application/json")
+            };
+        });
+
+        var httpClient = new HttpClient(handler);
+        var discogsProvider = new DiscogsProvider("fakeKey", "fakeSecret", "fakeToken", httpClient);
+        var metadataService = new MetadataService(discogsProvider);
+
+        var sourceData = new CueData
+        {
+            Artist = "Metal Priest",
+            Album = "Get It Now"
+        };
+
+        var results = await metadataService.SearchReleasesAsync(sourceData, deepSearch: false);
+
+        Assert.Single(results);
+        Assert.Equal("MP", results[0].Artist);
+        Assert.Equal("Get It Now", results[0].Album);
+        Assert.Equal("73053", results[0].CatalogNumber);
     }
 
     private class TestHttpMessageHandler : HttpMessageHandler

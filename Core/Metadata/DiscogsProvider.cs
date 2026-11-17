@@ -114,6 +114,17 @@ public class DiscogsProvider : IMetadataProvider
                     await PerformDiscogsTextSearchAsync(fallbackQuery, sourceData, list);
                 }
             }
+
+            if (list.Count == 0)
+            {
+                var acronym = StringExtensions.GetAcronym(sourceData.Artist);
+                if (!string.IsNullOrWhiteSpace(acronym))
+                {
+                    string acronymQuery = $"{acronym} {sourceData.Album}".Trim();
+                    Log($"Discogs text search returned 0 results. Retrying with artist acronym query: '{acronymQuery}'");
+                    await PerformDiscogsTextSearchAsync(acronymQuery, sourceData, list);
+                }
+            }
         }
 
         if (list.Count > 0 && !string.IsNullOrWhiteSpace(sourceData.Artist))
