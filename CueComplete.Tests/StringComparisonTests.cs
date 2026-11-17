@@ -99,6 +99,23 @@ public class StringComparisonTests
     }
 
     [Theory]
+    [InlineData("Get It Now", "Get It Now", true)]
+    [InlineData("Get It Now [Unofficial]", "Get It Now", true)]
+    [InlineData("Get It Now", "Get It Now (Deluxe)", true)]
+    [InlineData("Everything's Eventual", "Everything's Eventual (2003)", true)]
+    [InlineData("When The Storm Comes Down (Japan)", "When The Storm Comes Down", true)]
+    [InlineData("Rock & Roll", "Rock and Roll", true)]
+    [InlineData("Get It Now", "Yo Hey! The Bass", false)]
+    [InlineData("Get It Now", "Left Of Blue", false)]
+    [InlineData(null, "Get It Now", false)]
+    [InlineData("Get It Now", null, false)]
+    public void MatchesAlbum_EvaluatesCorrectly(string? candidate, string? target, bool expected)
+    {
+        var result = StringExtensions.MatchesAlbum(candidate, target);
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
     [InlineData("JP", "Japan", true)]
     [InlineData("Japan", "JP", true)]
     [InlineData("US", "United States", true)]
@@ -759,6 +776,80 @@ public class StringComparisonTests
 
         Assert.Single(results);
         Assert.Equal("MP", results[0].Artist);
+        Assert.Equal("Get It Now", results[0].Album);
+        Assert.Equal("73053", results[0].CatalogNumber);
+    }
+
+    [Fact]
+    public async Task DiscogsProvider_CatNoSearch_MatchesAlbum_WhenArtistDiffers()
+    {
+        var searchJson = """
+        {
+            "pagination": { "page": 1, "pages": 1, "per_page": 50, "items": 3, "urls": {} },
+            "results": [
+                { "id": 1, "title": "DJ RPM - Yo Hey! The Bass", "catno": "73053", "resource_url": "https://api.discogs.com/releases/1" },
+                { "id": 2, "title": "Dave Eggar - Left Of Blue", "catno": "73053", "resource_url": "https://api.discogs.com/releases/2" },
+                {
+                    "id": 9999,
+                    "title": "Totally Different Artist - Get It Now",
+                    "catno": "73053",
+                    "resource_url": "https://api.discogs.com/releases/9999"
+                }
+            ]
+        }
+        """;
+
+        var releaseJson = """
+        {
+            "id": 9999,
+            "title": "Get It Now",
+            "year": 1987,
+            "artists": [
+                {
+                    "name": "Totally Different Artist",
+                    "anv": ""
+                }
+            ],
+            "labels": [
+                {
+                    "name": "Steps Records",
+                    "catno": "73053"
+                }
+            ]
+        }
+        """;
+
+        var handler = new TestHttpMessageHandler((request) =>
+        {
+            if (request.RequestUri!.ToString().Contains("releases/9999"))
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(releaseJson, Encoding.UTF8, "application/json")
+                };
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(searchJson, Encoding.UTF8, "application/json")
+            };
+        });
+
+        var httpClient = new HttpClient(handler);
+        var provider = new DiscogsProvider("fakeKey", "fakeSecret", "fakeToken", httpClient);
+
+        var sourceData = new CueData
+        {
+            Artist = "Metal Priest",
+            Album = "Get It Now",
+            CatalogNumber = "73053"
+        };
+
+        var results = new List<CueData>();
+        await provider.PerformDiscogsCatNoSearchAsync(sourceData.CatalogNumber, sourceData, results);
+
+        Assert.Single(results);
+        Assert.Equal("Totally Different Artist", results[0].Artist);
         Assert.Equal("Get It Now", results[0].Album);
         Assert.Equal("73053", results[0].CatalogNumber);
     }

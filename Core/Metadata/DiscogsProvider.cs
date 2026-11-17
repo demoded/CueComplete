@@ -127,13 +127,23 @@ public class DiscogsProvider : IMetadataProvider
             }
         }
 
-        if (list.Count > 0 && !string.IsNullOrWhiteSpace(sourceData.Artist))
+        if (list.Count > 0 && (!string.IsNullOrWhiteSpace(sourceData.Artist) || !string.IsNullOrWhiteSpace(sourceData.Album)))
         {
-            var filtered = list.Where(d => StringExtensions.MatchesArtist(d.Artist, sourceData.Artist)).ToList();
+            var filtered = list.Where(d =>
+            {
+                bool artistMatches = !string.IsNullOrWhiteSpace(sourceData.Artist) && StringExtensions.MatchesArtist(d.Artist, sourceData.Artist);
+                bool albumMatches = !string.IsNullOrWhiteSpace(sourceData.Album) && StringExtensions.MatchesAlbum(d.Album, sourceData.Album);
+
+                if (!string.IsNullOrWhiteSpace(sourceData.Artist) && !string.IsNullOrWhiteSpace(sourceData.Album))
+                    return artistMatches || albumMatches;
+                if (!string.IsNullOrWhiteSpace(sourceData.Artist))
+                    return artistMatches;
+                return albumMatches;
+            }).ToList();
 
             if (filtered.Count < list.Count)
             {
-                Log($"Filtered Discogs search results by artist '{sourceData.Artist}': count changed from {list.Count} to {filtered.Count}");
+                Log($"Filtered Discogs search results by artist/album: count changed from {list.Count} to {filtered.Count}");
                 list = filtered;
             }
         }
@@ -176,7 +186,7 @@ public class DiscogsProvider : IMetadataProvider
         var tasks = new List<Task>();
         var candidateItems = searchResponse.Results.AsEnumerable();
 
-        if (!string.IsNullOrWhiteSpace(sourceData.Artist))
+        if (!string.IsNullOrWhiteSpace(sourceData.Artist) || !string.IsNullOrWhiteSpace(sourceData.Album))
         {
             var matchingItems = searchResponse.Results.Where(item =>
             {
@@ -186,7 +196,16 @@ public class DiscogsProvider : IMetadataProvider
                     if (parts.Length == 2)
                     {
                         var artist = CleanDiscogsString(parts[0].Trim());
-                        return StringExtensions.MatchesArtist(artist, sourceData.Artist);
+                        var album = CleanDiscogsString(parts[1].Trim());
+
+                        bool artistMatches = !string.IsNullOrWhiteSpace(sourceData.Artist) && StringExtensions.MatchesArtist(artist, sourceData.Artist);
+                        bool albumMatches = !string.IsNullOrWhiteSpace(sourceData.Album) && StringExtensions.MatchesAlbum(album, sourceData.Album);
+
+                        if (!string.IsNullOrWhiteSpace(sourceData.Artist) && !string.IsNullOrWhiteSpace(sourceData.Album))
+                            return artistMatches || albumMatches;
+                        if (!string.IsNullOrWhiteSpace(sourceData.Artist))
+                            return artistMatches;
+                        return albumMatches;
                     }
                 }
                 return false;
@@ -196,7 +215,7 @@ public class DiscogsProvider : IMetadataProvider
 
             if (matchingItems.Count < searchResponse.Results.Count)
             {
-                Log($"Filtered Discogs search results by artist '{sourceData.Artist}': count changed from {searchResponse.Results.Count} to {matchingItems.Count}");
+                Log($"Filtered Discogs search results by artist/album: count changed from {searchResponse.Results.Count} to {matchingItems.Count}");
             }
         }
 
@@ -262,13 +281,23 @@ public class DiscogsProvider : IMetadataProvider
 
         await Task.WhenAll(tasks);
 
-        if (!string.IsNullOrWhiteSpace(sourceData.Artist))
+        if (!string.IsNullOrWhiteSpace(sourceData.Artist) || !string.IsNullOrWhiteSpace(sourceData.Album))
         {
-            var filtered = list.Where(d => StringExtensions.MatchesArtist(d.Artist, sourceData.Artist)).ToList();
+            var filtered = list.Where(d =>
+            {
+                bool artistMatches = !string.IsNullOrWhiteSpace(sourceData.Artist) && StringExtensions.MatchesArtist(d.Artist, sourceData.Artist);
+                bool albumMatches = !string.IsNullOrWhiteSpace(sourceData.Album) && StringExtensions.MatchesAlbum(d.Album, sourceData.Album);
+
+                if (!string.IsNullOrWhiteSpace(sourceData.Artist) && !string.IsNullOrWhiteSpace(sourceData.Album))
+                    return artistMatches || albumMatches;
+                if (!string.IsNullOrWhiteSpace(sourceData.Artist))
+                    return artistMatches;
+                return albumMatches;
+            }).ToList();
 
             if (filtered.Count < list.Count)
             {
-                Log($"Filtered Discogs text search results by artist '{sourceData.Artist}': count changed from {list.Count} to {filtered.Count}");
+                Log($"Filtered Discogs text search results by artist/album: count changed from {list.Count} to {filtered.Count}");
                 list.Clear();
                 list.AddRange(filtered);
             }

@@ -73,6 +73,38 @@ public static class StringExtensions
         return IsAcronymMatch(candNormalized, targetNormalized);
     }
 
+    /// <summary>
+    /// Checks whether candidate and target album titles match bidirectionally (one contains the other),
+    /// ignoring casing, diacritics/accents, trailing annotations (e.g. "(Japan)", "[Deluxe Edition]"),
+    /// and normalizing '&' / 'and'.
+    /// </summary>
+    public static bool MatchesAlbum(string? candidate, string? target)
+    {
+        if (string.IsNullOrWhiteSpace(candidate) || string.IsNullOrWhiteSpace(target))
+            return false;
+
+        var candTrimmed = candidate.Trim();
+        var targetTrimmed = target.Trim();
+
+        if (InvariantCompareInfo.Compare(candTrimmed, targetTrimmed, DiacriticAndCaseInsensitiveOptions) == 0)
+            return true;
+
+        var candStripped = StripTitleAnnotations(candTrimmed);
+        var targetStripped = StripTitleAnnotations(targetTrimmed);
+
+        if (InvariantCompareInfo.Compare(candStripped, targetStripped, DiacriticAndCaseInsensitiveOptions) == 0)
+            return true;
+
+        var candNormalized = NormalizeArtist(candStripped);
+        var targetNormalized = NormalizeArtist(targetStripped);
+
+        if (InvariantCompareInfo.Compare(candNormalized, targetNormalized, DiacriticAndCaseInsensitiveOptions) == 0)
+            return true;
+
+        return InvariantCompareInfo.IndexOf(candNormalized, targetNormalized, DiacriticAndCaseInsensitiveOptions) >= 0
+            || InvariantCompareInfo.IndexOf(targetNormalized, candNormalized, DiacriticAndCaseInsensitiveOptions) >= 0;
+    }
+
     private static string NormalizeArtist(string artist)
     {
         var normalized = Regex.Replace(artist, @"\s*\(\d+\)$", "").Trim();

@@ -380,6 +380,18 @@
 - Built Release configuration via `dotnet build -c Release` (0 warnings, 0 errors) and packaged win-x64 single-file executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
 - Created branch `fix/artist-acronym-matching` and opened Pull Request [#17](https://github.com/demoded/CueComplete/pull/17).
 
+### [2026-11-17 19:52] Implement Album Matching in Discogs Search Filtering
+- Updated [`Core/StringExtensions.cs`](file:///D:/git/CueComplete/Core/StringExtensions.cs):
+  - Added `MatchesAlbum` supporting exact, stripped-annotation, and normalized bidirectional album title comparison.
+- Updated [`Core/Metadata/DiscogsProvider.cs`](file:///D:/git/CueComplete/Core/Metadata/DiscogsProvider.cs):
+  - Updated candidate pre-filtering and post-fetch filtering to evaluate `MatchesArtist || MatchesAlbum`, ensuring releases whose album matches the query are retained even if the artist name varies or is an alias.
+- Added unit tests in [`CueComplete.Tests/StringComparisonTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/StringComparisonTests.cs):
+  - `MatchesAlbum_EvaluatesCorrectly` testing exact, stripped, and normalized title comparisons.
+  - `DiscogsProvider_CatNoSearch_MatchesAlbum_WhenArtistDiffers` verifying a candidate is matched when album matches despite differing artist.
+- Verified all 156 unit tests passed via `dotnet test`.
+- Built Release configuration via `dotnet build -c Release` (0 warnings, 0 errors) and packaged win-x64 single-file executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
+
+
 
 
 
