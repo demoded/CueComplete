@@ -337,3 +337,8 @@
 - Built project in Release configuration via `dotnet build -c Release` (0 warnings, 0 errors).
 - Packaged single-file release executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true` into `bin/Release/net11.0/win-x64/publish/CueComplete.exe`.
 
+### [2026-11-17 16:49] Release v1.4.0
+- Updated `<Version>` in [`CueComplete.csproj`](file:///D:/git/CueComplete/CueComplete.csproj) to `1.4.0`.
+- Created git tag `v1.4.0` and pushed to GitHub to trigger automated release workflow.
+
+
