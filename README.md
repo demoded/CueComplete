@@ -46,7 +46,19 @@ dotnet run -- "C:\Path\To\Your\Music\Folder"
 - **Terminal GUI**: Easy-to-use keyboard-driven interface using `Terminal.Gui`.
 - **Recursive Scanning**: Automatically finds all `.cue` files in the given directory and its subdirectories.
 - **Metadata Enrichment**: Connects to external services to fetch accurate track and album information.
-- **Header Diff Viewer**: Press `D` to inspect metadata differences between the current `.cue` header and its `.bak` backup file.
+- **Automatic Backups**: Automatically creates `.cue.bak` backup copies before writing metadata changes to any `.cue` file.
+- **Header Diff Viewer**: Instant modal diff comparing the 11 release header fields between the current `.cue` file and its backup `.bak` copy (ignoring track details).
+
+## Keyboard Shortcuts
+
+| Shortcut | Action | Description |
+| :--- | :--- | :--- |
+| `Enter` | **Apply / Load** | Load selected `.cue` file, or apply the selected search result metadata. |
+| `S` | **Deep Search** | Run comprehensive multi-layered search across MusicBrainz and Discogs. |
+| `D` | **Diff** | Open modal header diff comparing current `.cue` metadata with its `.bak` backup. |
+| `Ctrl+L` | **Toggle Log** | Toggle application debug logging to `app.log`. |
+| `Ctrl+Q` | **Quit** | Exit CueComplete. |
+| `Esc` / `Q` | **Close Dialog** | Dismiss modal dialogs such as the Diff viewer. |
 
 ## Search Logic
 

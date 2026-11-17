@@ -313,5 +313,10 @@
 - Deleted merged local feature branch `feat/cue-header-diff-view`.
 - Verified `dotnet test` - all 114 unit tests passed.
 
+### [2026-11-17 15:37] Update Documentation and Application Screenshot
+- Created plan in [`.agents/plan 20261117T1536.md`](file:///D:/git/CueComplete/.agents/plan%2020261117T1536.md).
+- Updated [`README.md`](file:///D:/git/CueComplete/README.md) with a comprehensive Keyboard Shortcuts table and enhanced descriptions for automatic backups and Header Diff Viewer.
+- Updated application screenshot [`assets/screenshot.png`](file:///D:/git/CueComplete/assets/screenshot.png) capturing the updated layout and status bar actions.
+
 
 
