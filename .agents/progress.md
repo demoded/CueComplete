@@ -319,5 +319,13 @@
 - Updated application screenshot [`assets/screenshot.png`](file:///D:/git/CueComplete/assets/screenshot.png) capturing the updated layout and status bar actions.
 - Created branch `docs/update-readme-and-screenshot` and opened Pull Request [#14](https://github.com/demoded/CueComplete/pull/14).
 
+### [2026-11-17 16:11] Plan Remove Discogs Search 5-Item Limit
+- Created plan in [`.agents/plan 20261117T1611.md`](file:///D:/git/CueComplete/.agents/plan%2020261117T1611.md) to remove the premature `.Take(5)` limitation in `DiscogsProvider.PerformDiscogsSearchAsync` and pre-filter search candidates by artist when available.
 
-
+### [2026-11-17 16:14] Remove Discogs Search 5-Item Limit and Add Pre-filtering
+- Updated [`Core/Metadata/DiscogsProvider.cs`](file:///D:/git/CueComplete/Core/Metadata/DiscogsProvider.cs) to remove the hardcoded `.Take(5)` truncation on `searchResponse.Results`.
+- Implemented pre-filtering of candidate items by comparing parsed `"Artist - Title"` with `sourceData.Artist` using `StringExtensions.MatchesArtist`, ensuring detailed release API calls are dispatched only for matching candidates (conserving rate limits) while maintaining fallback to all results when no title matches or artist is unspecified.
+- Added unit tests `DiscogsProvider_CatNoSearch_FindsMatchBeyondFirst5Items` and `DiscogsProvider_BarcodeSearch_ProcessesAllResultsBeyondFirst5Items_WhenArtistNotSpecified` in [`CueComplete.Tests/StringComparisonTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/StringComparisonTests.cs).
+- Verified all 116 unit tests passed via `dotnet test`.
+- Built Release configuration via `dotnet build -c Release` (0 warnings, 0 errors) and packaged win-x64 single-file executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
+- Created branch `fix/discogs-search-result-limit` and opened Pull Request [#15](https://github.com/demoded/CueComplete/pull/15).
