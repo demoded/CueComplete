@@ -322,6 +322,8 @@
 - Added unit tests `DiscogsProvider_CatNoSearch_FindsMatchBeyondFirst5Items` and `DiscogsProvider_BarcodeSearch_ProcessesAllResultsBeyondFirst5Items_WhenArtistNotSpecified` in [`CueComplete.Tests/StringComparisonTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/StringComparisonTests.cs).
 - Verified all 116 unit tests passed via `dotnet test`.
 - Built Release configuration via `dotnet build -c Release` (0 warnings, 0 errors) and packaged win-x64 single-file executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
+- Created branch `fix/discogs-search-result-limit` and opened Pull Request [#15](https://github.com/demoded/CueComplete/pull/15).
+
 
 
 
