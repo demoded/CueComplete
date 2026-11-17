@@ -16,6 +16,12 @@ public class MetadataService
         _musicBrainzProvider = new MusicBrainzProvider(logCallback: Log);
     }
 
+    public MetadataService(DiscogsProvider discogsProvider, MusicBrainzProvider? musicBrainzProvider = null)
+    {
+        _discogsProvider = discogsProvider;
+        _musicBrainzProvider = musicBrainzProvider ?? new MusicBrainzProvider(logCallback: Log);
+    }
+
     public static bool IsLoggingEnabled { get; set; } = false;
     private static readonly object _logLock = new();
 
@@ -71,6 +77,31 @@ public class MetadataService
                     Log($"Fast search Discogs Error: {ex.Message}");
                 }
             }
+            if (results.Count == 0 && _discogsProvider.HasCredentials && !string.IsNullOrWhiteSpace(sourceData.Artist) && !string.IsNullOrWhiteSpace(sourceData.Album))
+            {
+                try
+                {
+                    Log($"Fast search: 0 matching CatNo/Barcode results found. Falling back to search by artist and album: '{sourceData.Artist} - {sourceData.Album}'");
+                    string query = $"{sourceData.Artist} {sourceData.Album}".Trim();
+                    await _discogsProvider.PerformDiscogsTextSearchAsync(query, sourceData, results);
+
+                    if (results.Count == 0)
+                    {
+                        var cleanAlbum = StringExtensions.StripTitleAnnotations(sourceData.Album);
+                        if (!string.IsNullOrWhiteSpace(cleanAlbum) && !string.Equals(cleanAlbum, sourceData.Album, StringComparison.OrdinalIgnoreCase))
+                        {
+                            string fallbackQuery = $"{sourceData.Artist} {cleanAlbum}".Trim();
+                            Log($"Fast search with full album returned 0 results. Retrying with stripped album title: '{cleanAlbum}'");
+                            await _discogsProvider.PerformDiscogsTextSearchAsync(fallbackQuery, sourceData, results);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log($"Fast search Discogs Text Search Error: {ex.Message}");
+                }
+            }
+
             if (results.Count > 0)
             {
                 return results;
@@ -83,7 +114,7 @@ public class MetadataService
         var mbResults = new List<CueData>();
 
         // 0. Prioritized Discogs Catalog Number Search
-        if (hasCatalogNumber && _discogsProvider.HasCredentials)
+        if (hasCatalogNumber && _discogsProvider.HasCredentials && results.Count == 0)
         {
             try
             {

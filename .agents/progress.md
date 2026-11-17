@@ -341,4 +341,19 @@
 - Updated `<Version>` in [`CueComplete.csproj`](file:///D:/git/CueComplete/CueComplete.csproj) to `1.4.0`.
 - Created git tag `v1.4.0` and pushed to GitHub to trigger automated release workflow.
 
+### [2026-11-17 18:15] Plan Skip Non-Matching Search Fallback
+- Created plan in [`.agents/plan 20261117T1815.md`](file:///D:/git/CueComplete/.agents/plan%2020261117T1815.md) to prevent firing release-detail HTTP requests when 0 items match the artist, and fall back to searching by artist and album.
+
+### [2026-11-17 18:17] Skip Raw Results Fallback and Search by Artist and Album
+- Updated [`Core/Metadata/DiscogsProvider.cs`](file:///D:/git/CueComplete/Core/Metadata/DiscogsProvider.cs) to prevent falling back to all raw results when 0 candidate items match `sourceData.Artist`, eliminating wasteful release detail requests that exhaust API rate limits.
+- Updated `DiscogsProvider.SearchAsync` to fall back to text search whenever `list.Count == 0`, regardless of whether unused discogsIds/barcodes were present.
+- Updated [`Core/MetadataService.cs`](file:///D:/git/CueComplete/Core/MetadataService.cs) so Fast Search falls back to Discogs artist and album search (including stripped title fallback) when CatNo/Barcode yields 0 matches, and avoided repeating the same failed CatNo query in Deep Search.
+- Added constructor in `MetadataService` for testability with injected providers.
+- Added unit tests `DiscogsProvider_CatNoSearch_DoesNotFireRequestsForNonMatchingResults_WhenZeroMatchArtist` and `MetadataService_FastSearch_FallsBackToArtistAndAlbum_WhenCatNoReturnsZeroMatches` in [`CueComplete.Tests/StringComparisonTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/StringComparisonTests.cs).
+- Verified `dotnet test` (all 118 unit tests passed).
+- Built Release configuration via `dotnet build -c Release` (0 warnings, 0 errors) and packaged win-x64 single-file executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
+- Created branch `fix/skip-non-matching-catno-fallback` and opened Pull Request [#16](https://github.com/demoded/CueComplete/pull/16).
+
+
+
 
