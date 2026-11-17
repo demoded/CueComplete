@@ -378,6 +378,7 @@
   - `MetadataService_FastSearch_FallsBackToAcronym_WhenTextSearchYieldsZeroMatches` integration test verifying acronym fallback finds the target release.
 - Verified all 145 unit tests passed via `dotnet test`.
 - Built Release configuration via `dotnet build -c Release` (0 warnings, 0 errors) and packaged win-x64 single-file executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
+- Created branch `fix/artist-acronym-matching` and opened Pull Request [#17](https://github.com/demoded/CueComplete/pull/17).
 
 
 
