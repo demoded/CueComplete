@@ -329,3 +329,11 @@
 - Verified all 116 unit tests passed via `dotnet test`.
 - Built Release configuration via `dotnet build -c Release` (0 warnings, 0 errors) and packaged win-x64 single-file executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
 - Created branch `fix/discogs-search-result-limit` and opened Pull Request [#15](https://github.com/demoded/CueComplete/pull/15).
+
+### [2026-11-17 16:38] Merge Pull Requests #14 and #15 to Master & Build
+- Pulled latest `master` from `origin/master` with merged PR [#14](https://github.com/demoded/CueComplete/pull/14) and PR [#15](https://github.com/demoded/CueComplete/pull/15).
+- Cleaned up local merged branches `fix/discogs-search-result-limit` and `docs/update-readme-and-screenshot`.
+- Verified `dotnet test` (all 116 tests passed).
+- Built project in Release configuration via `dotnet build -c Release` (0 warnings, 0 errors).
+- Packaged single-file release executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true` into `bin/Release/net11.0/win-x64/publish/CueComplete.exe`.
+
