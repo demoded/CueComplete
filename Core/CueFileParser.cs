@@ -281,4 +281,146 @@ public class CueFileParser
             return Encoding.GetEncoding(1252);
         }
     }
+
+    public static CueData ParseFormattedText(string text, CueData? template = null)
+    {
+        var cue = new CueData();
+        if (template != null)
+        {
+            cue.OriginalLines = new List<string>(template.OriginalLines);
+            cue.OriginalEncoding = template.OriginalEncoding;
+            cue.DiscId = template.DiscId;
+            cue.MusicBrainzDiscId = template.MusicBrainzDiscId;
+            cue.DiscogsId = template.DiscogsId;
+            cue.Source = template.Source;
+        }
+
+        if (string.IsNullOrWhiteSpace(text))
+            return cue;
+
+        var lines = text.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+        foreach (var rawLine in lines)
+        {
+            var line = rawLine.Trim();
+            if (string.IsNullOrEmpty(line) || line.StartsWith("(", StringComparison.Ordinal))
+                continue;
+
+            int colonIdx = line.IndexOf(':');
+            if (colonIdx <= 0)
+                continue;
+
+            string key = line.Substring(0, colonIdx).Trim();
+            string val = line.Substring(colonIdx + 1).Trim();
+            string? nonNullVal = string.IsNullOrWhiteSpace(val) ? null : val;
+
+            if (key.Equals("Artist", StringComparison.OrdinalIgnoreCase))
+            {
+                cue.Artist = nonNullVal;
+            }
+            else if (key.Equals("Album", StringComparison.OrdinalIgnoreCase))
+            {
+                cue.Album = nonNullVal;
+            }
+            else if (key.Equals("Genre", StringComparison.OrdinalIgnoreCase))
+            {
+                cue.Genre = nonNullVal;
+            }
+            else if (key.Equals("Date", StringComparison.OrdinalIgnoreCase))
+            {
+                cue.Date = nonNullVal;
+            }
+            else if (key.Equals("Label", StringComparison.OrdinalIgnoreCase))
+            {
+                cue.Label = nonNullVal;
+            }
+            else if (key.Equals("Cat No", StringComparison.OrdinalIgnoreCase) ||
+                     key.Equals("CatNo", StringComparison.OrdinalIgnoreCase) ||
+                     key.Equals("Catalog", StringComparison.OrdinalIgnoreCase) ||
+                     key.Equals("Catalog Number", StringComparison.OrdinalIgnoreCase) ||
+                     key.Equals("CatalogNumber", StringComparison.OrdinalIgnoreCase))
+            {
+                cue.CatalogNumber = nonNullVal;
+            }
+            else if (key.Equals("Country", StringComparison.OrdinalIgnoreCase))
+            {
+                cue.Country = nonNullVal;
+            }
+            else if (key.Equals("Barcode", StringComparison.OrdinalIgnoreCase))
+            {
+                cue.Barcode = nonNullVal;
+            }
+            else if (key.Equals("Rel Date", StringComparison.OrdinalIgnoreCase) ||
+                     key.Equals("Release Date", StringComparison.OrdinalIgnoreCase) ||
+                     key.Equals("ReleaseDate", StringComparison.OrdinalIgnoreCase))
+            {
+                cue.ReleaseDate = nonNullVal;
+            }
+            else if (key.Equals("Discs", StringComparison.OrdinalIgnoreCase) ||
+                     key.Equals("Disc", StringComparison.OrdinalIgnoreCase))
+            {
+                ParseDiscsAndTracks(line, cue);
+            }
+            else if (key.Equals("Tracks", StringComparison.OrdinalIgnoreCase) ||
+                     key.Equals("Track", StringComparison.OrdinalIgnoreCase))
+            {
+                if (int.TryParse(val, out int t))
+                {
+                    cue.Tracks = t;
+                }
+            }
+            else if (key.Equals("Comment", StringComparison.OrdinalIgnoreCase))
+            {
+                cue.Comment = nonNullVal;
+            }
+        }
+
+        return cue;
+    }
+
+    private static void ParseDiscsAndTracks(string line, CueData cue)
+    {
+        int tracksIdx = line.IndexOf("Tracks:", StringComparison.OrdinalIgnoreCase);
+        if (tracksIdx < 0)
+        {
+            tracksIdx = line.IndexOf("Track:", StringComparison.OrdinalIgnoreCase);
+        }
+
+        string discsPart;
+        string? tracksPart = null;
+
+        int discsColonIdx = line.IndexOf(':');
+        if (tracksIdx >= 0)
+        {
+            discsPart = line.Substring(discsColonIdx + 1, tracksIdx - (discsColonIdx + 1)).Trim();
+            int trackColon = line.IndexOf(':', tracksIdx);
+            if (trackColon >= 0)
+            {
+                tracksPart = line.Substring(trackColon + 1).Trim();
+            }
+        }
+        else
+        {
+            discsPart = discsColonIdx >= 0 ? line.Substring(discsColonIdx + 1).Trim() : string.Empty;
+        }
+
+        if (!string.IsNullOrWhiteSpace(tracksPart) && int.TryParse(tracksPart, out int t))
+        {
+            cue.Tracks = t;
+        }
+
+        if (!string.IsNullOrWhiteSpace(discsPart))
+        {
+            var ofMatch = Regex.Match(discsPart, @"^(\d+)\s+of\s+(\d+)$", RegexOptions.IgnoreCase);
+            if (ofMatch.Success)
+            {
+                cue.DiscNumber = int.Parse(ofMatch.Groups[1].Value);
+                cue.Discs = int.Parse(ofMatch.Groups[2].Value);
+            }
+            else if (int.TryParse(discsPart, out int d))
+            {
+                cue.Discs = d;
+                if (d == 1) cue.DiscNumber = 1;
+            }
+        }
+    }
 }

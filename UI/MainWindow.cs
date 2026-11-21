@@ -19,6 +19,14 @@ public class MainWindow : Window
     private TextView _sourceDetailsTextView;
     private TextView _foundDetailsTextView;
 
+    public Action<string, string>? OnDoneMessage { get; set; } = (title, msg) => 
+    {
+        if (Application.Driver is not FakeDriver)
+        {
+            MessageBox.Query(title, msg, "OK");
+        }
+    };
+
     public string LeftPaneTitle => _cueFilesPane?.Title?.ToString() ?? string.Empty;
     public string CueFilesPaneTitle => LeftPaneTitle;
     public string SearchResultsPaneTitle => _searchResultsPane?.Title?.ToString() ?? string.Empty;
@@ -29,6 +37,8 @@ public class MainWindow : Window
     public string SourcePath => _sourcePathLabel?.Text?.ToString() ?? string.Empty;
     public string SourceDetailsText => _sourceDetailsTextView?.Text?.ToString() ?? string.Empty;
     public string FoundDetailsText => _foundDetailsTextView?.Text?.ToString() ?? string.Empty;
+    public TextView SourceDetailsTextView => _sourceDetailsTextView;
+    public TextView FoundDetailsTextView => _foundDetailsTextView;
     public FrameView CueFilesPane => _cueFilesPane;
     public FrameView SearchResultsPane => _searchResultsPane;
     public FrameView SourceCueDetailsPane => _sourceCueDetailsPane;
@@ -139,17 +149,42 @@ public class MainWindow : Window
             Y = 0,
             Width = Dim.Fill(),
             Height = Dim.Fill(),
-            ReadOnly = true,
-            WordWrap = true
+            ReadOnly = false,
+            WordWrap = true,
+            AllowsTab = false
+        };
+        _foundDetailsTextView.KeyPress += (e) =>
+        {
+            if (e.KeyEvent.Key == Key.Enter || e.KeyEvent.Key == (Key.CtrlMask | Key.Enter))
+            {
+                ApplyFoundCueData();
+                e.Handled = true;
+            }
+            else if (e.KeyEvent.Key == Key.Esc)
+            {
+                ResetFoundCueDataPreview();
+                e.Handled = true;
+            }
+        };
+        _foundDetailsTextView.Enter += (e) =>
+        {
+            if (_foundDetailsTextView.Text?.ToString() == "(No results found)" && _currentCueData != null)
+            {
+                _foundDetailsTextView.Text = FormatCueData(_currentCueData);
+            }
         };
         _foundCueDataPane.Add(_foundDetailsTextView);
 
         var statusBar = new StatusBar(new StatusItem[] {
             new StatusItem(Key.CtrlMask | Key.Q, "~^Q~ Quit", () => Application.RequestStop()),
             new StatusItem(Key.Null, "~Enter~ Apply", () => {
-                if (_resultsListView.HasFocus && _resultsListView.SelectedItem >= 0)
+                if (_foundDetailsTextView.HasFocus)
                 {
-                    ResultsListView_OpenSelectedItem(new ListViewItemEventArgs(_resultsListView.SelectedItem, null));
+                    ApplyFoundCueData();
+                }
+                else if (_resultsListView.HasFocus && _resultsListView.SelectedItem >= 0)
+                {
+                    ApplyFoundCueData();
                 }
                 else if (_fileListView.HasFocus && _fileListView.SelectedItem >= 0 && _fileListView.SelectedItem < _cueFiles.Count)
                 {
@@ -168,6 +203,11 @@ public class MainWindow : Window
 
         Application.RootKeyEvent += (e) => 
         {
+            if (_foundDetailsTextView.HasFocus)
+            {
+                return false;
+            }
+
             if (e.Key == (Key)'s' || e.Key == (Key)'S' || e.Key == Key.S)
             {
                 if (_fileListView.SelectedItem >= 0 && _fileListView.SelectedItem < _cueFiles.Count)
@@ -244,7 +284,7 @@ public class MainWindow : Window
         }
     }
 
-    private static string FormatCueData(CueData? data)
+    public static string FormatCueData(CueData? data)
     {
         if (data == null) return string.Empty;
 
@@ -261,8 +301,8 @@ public class MainWindow : Window
             $"Country: {data.Country}\n" +
             $"Barcode: {data.Barcode}\n" +
             $"Rel Date: {data.ReleaseDate}\n" +
-            $"Discs: {discsStr}  Tracks: {data.Tracks}" +
-            (!string.IsNullOrWhiteSpace(data.Comment) ? $"\nComment: {data.Comment}" : "");
+            $"Discs: {discsStr}  Tracks: {data.Tracks}\n" +
+            $"Comment: {data.Comment}";
     }
 
     private void UpdateLeftPaneTitle()
@@ -290,18 +330,21 @@ public class MainWindow : Window
     private void UpdateFilePreview()
     {
         UpdateLeftPaneTitle();
+        _lastPreviewedResultIndex = -1;
         if (_fileListView.SelectedItem >= 0 && _fileListView.SelectedItem < _cueFiles.Count)
         {
             var filePath = _cueFiles[_fileListView.SelectedItem];
             _sourcePathLabel.Text = filePath;
             try {
                 var previewData = CueFileParser.Parse(filePath);
+                _currentCueData = previewData;
                 _sourceDetailsTextView.Text = FormatCueData(previewData);
                 _foundDetailsTextView.Text = string.Empty;
                 
                 _searchResults.Clear();
                 _resultsListView.SetSource(_searchResults);
             } catch {
+                _currentCueData = null;
                 _sourceDetailsTextView.Text = string.Empty;
                 _foundDetailsTextView.Text = string.Empty;
             }
@@ -314,23 +357,38 @@ public class MainWindow : Window
         }
     }
 
-    private void UpdateResultPreview()
+    private int _lastPreviewedResultIndex = -1;
+
+    private void UpdateResultPreview(bool force = false)
     {
         if (_searchResults != null && _resultsListView.SelectedItem >= 0 && _resultsListView.SelectedItem < _searchResults.Count)
         {
+            if (!force && _resultsListView.SelectedItem == _lastPreviewedResultIndex)
+            {
+                return;
+            }
+
+            _lastPreviewedResultIndex = _resultsListView.SelectedItem;
             var data = _searchResults[_resultsListView.SelectedItem];
             _foundDetailsTextView.Text = FormatCueData(data);
         }
         else
         {
+            _lastPreviewedResultIndex = -1;
             _foundDetailsTextView.Text = string.Empty;
         }
+    }
+
+    public void ResetFoundCueDataPreview()
+    {
+        UpdateResultPreview(force: true);
     }
 
     private void LoadCueFile(string filePath, bool deepSearch = false)
     {
         _fileListView.SetFocus();
         UpdateLeftPaneTitle();
+        _lastPreviewedResultIndex = -1;
         _sourcePathLabel.Text = filePath;
 
         try
@@ -422,7 +480,7 @@ public class MainWindow : Window
                             if (_searchResults.Count > 0)
                             {
                                 _resultsListView.SelectedItem = 0;
-                                UpdateResultPreview();
+                                UpdateResultPreview(force: true);
                                 _resultsListView.SetFocus();
                             }
                             else
@@ -454,61 +512,88 @@ public class MainWindow : Window
         });
     }
 
-    private void ResultsListView_OpenSelectedItem(ListViewItemEventArgs obj)
+    public void ApplyFoundCueData()
     {
-        if (_searchResults.Count > obj.Item && _currentCueData != null)
+        if (_fileListView.SelectedItem < 0 || _fileListView.SelectedItem >= _cueFiles.Count)
         {
-            var selectedResult = _searchResults[obj.Item];
-            
-            // Merge Data (Use selected, fallback to original if selected doesn't have it)
-            _currentCueData.Artist = selectedResult.Artist ?? _currentCueData.Artist;
-            _currentCueData.Album = selectedResult.Album ?? _currentCueData.Album;
-            _currentCueData.Genre = selectedResult.Genre ?? _currentCueData.Genre;
-            _currentCueData.Date = selectedResult.Date ?? _currentCueData.Date;
-            _currentCueData.Label = selectedResult.Label ?? _currentCueData.Label;
-            _currentCueData.CatalogNumber = selectedResult.CatalogNumber ?? _currentCueData.CatalogNumber;
-            _currentCueData.Country = selectedResult.Country ?? _currentCueData.Country;
-            _currentCueData.Barcode = selectedResult.Barcode ?? _currentCueData.Barcode;
-            _currentCueData.ReleaseDate = selectedResult.ReleaseDate ?? _currentCueData.ReleaseDate;
-            _currentCueData.Comment = selectedResult.Comment ?? _currentCueData.Comment;
-            _currentCueData.DiscNumber = selectedResult.DiscNumber ?? _currentCueData.DiscNumber;
-            _currentCueData.Discs = selectedResult.Discs ?? _currentCueData.Discs;
+            return;
+        }
 
-            if (_currentCueData.Discs.HasValue)
-            {
-                if (_currentCueData.Discs.Value == 1)
-                {
-                    _currentCueData.DiscNumber = 1;
-                }
-                else if (_currentCueData.DiscNumber.HasValue && _currentCueData.DiscNumber.Value > _currentCueData.Discs.Value)
-                {
-                    _currentCueData.DiscNumber = 1;
-                }
-            }
-
+        var filePath = _cueFiles[_fileListView.SelectedItem];
+        if (_currentCueData == null)
+        {
             try
             {
-                var filePath = _cueFiles[_fileListView.SelectedItem];
-                CueFileWriter.Save(filePath, _currentCueData);
-
-                int nextIndex = _fileListView.SelectedItem + 1;
-                if (nextIndex < _cueFiles.Count)
-                {
-                    _fileListView.SelectedItem = nextIndex;
-                    LoadCueFile(_cueFiles[nextIndex]);
-                }
-                else
-                {
-                    _sourceDetailsTextView.Text = FormatCueData(_currentCueData);
-                    _foundDetailsTextView.Text = string.Empty;
-                    MessageBox.Query("Done", "All files processed.", "OK");
-                }
+                _currentCueData = CueFileParser.Parse(filePath);
             }
             catch (Exception ex)
             {
-                _metadataService.Log($"Failed to save CUE file: {ex}");
-                MessageBox.ErrorQuery("Save Error", $"Failed to save CUE file:\n{ex.Message}", "OK");
+                _metadataService.Log($"Failed to parse CUE file '{filePath}': {ex.Message}");
+                return;
             }
         }
+
+        CueData? selectedResult = null;
+        if (_searchResults != null && _resultsListView.SelectedItem >= 0 && _resultsListView.SelectedItem < _searchResults.Count)
+        {
+            selectedResult = _searchResults[_resultsListView.SelectedItem];
+        }
+
+        var text = _foundDetailsTextView?.Text?.ToString() ?? string.Empty;
+        var editedData = CueFileParser.ParseFormattedText(text, selectedResult ?? _currentCueData);
+
+        // Merge Data (Use edited/selected, fallback to original if not present)
+        _currentCueData.Artist = editedData.Artist ?? _currentCueData.Artist;
+        _currentCueData.Album = editedData.Album ?? _currentCueData.Album;
+        _currentCueData.Genre = editedData.Genre ?? _currentCueData.Genre;
+        _currentCueData.Date = editedData.Date ?? _currentCueData.Date;
+        _currentCueData.Label = editedData.Label ?? _currentCueData.Label;
+        _currentCueData.CatalogNumber = editedData.CatalogNumber ?? _currentCueData.CatalogNumber;
+        _currentCueData.Country = editedData.Country ?? _currentCueData.Country;
+        _currentCueData.Barcode = editedData.Barcode ?? _currentCueData.Barcode;
+        _currentCueData.ReleaseDate = editedData.ReleaseDate ?? _currentCueData.ReleaseDate;
+        _currentCueData.Comment = editedData.Comment ?? _currentCueData.Comment;
+        _currentCueData.DiscNumber = editedData.DiscNumber ?? _currentCueData.DiscNumber;
+        _currentCueData.Discs = editedData.Discs ?? _currentCueData.Discs;
+
+        if (_currentCueData.Discs.HasValue)
+        {
+            if (_currentCueData.Discs.Value == 1)
+            {
+                _currentCueData.DiscNumber = 1;
+            }
+            else if (_currentCueData.DiscNumber.HasValue && _currentCueData.DiscNumber.Value > _currentCueData.Discs.Value)
+            {
+                _currentCueData.DiscNumber = 1;
+            }
+        }
+
+        try
+        {
+            CueFileWriter.Save(filePath, _currentCueData);
+
+            int nextIndex = _fileListView.SelectedItem + 1;
+            if (nextIndex < _cueFiles.Count)
+            {
+                _fileListView.SelectedItem = nextIndex;
+                LoadCueFile(_cueFiles[nextIndex]);
+            }
+            else
+            {
+                if (_sourceDetailsTextView != null) _sourceDetailsTextView.Text = FormatCueData(_currentCueData);
+                if (_foundDetailsTextView != null) _foundDetailsTextView.Text = string.Empty;
+                OnDoneMessage?.Invoke("Done", "All files processed.");
+            }
+        }
+        catch (Exception ex)
+        {
+            _metadataService.Log($"Failed to save CUE file: {ex}");
+            MessageBox.ErrorQuery("Save Error", $"Failed to save CUE file:\n{ex.Message}", "OK");
+        }
+    }
+
+    private void ResultsListView_OpenSelectedItem(ListViewItemEventArgs obj)
+    {
+        ApplyFoundCueData();
     }
 }

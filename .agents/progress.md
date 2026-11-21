@@ -391,6 +391,43 @@
 - Verified all 156 unit tests passed via `dotnet test`.
 - Built Release configuration via `dotnet build -c Release` (0 warnings, 0 errors) and packaged win-x64 single-file executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
 
+### [2026-11-21 18:12] Plan Allow Edit "Found cue data" Page (Issue #18)
+- Created plan in [`.agents/plan 20261121T1812.md`](file:///D:/git/CueComplete/.agents/plan%2020261121T1812.md) to implement editable metadata in the "Found cue data" pane, allowing users to fine-tune metadata prior to saving or manually input metadata when no search results are returned.
+
+### [2026-11-21 18:31] Implement Editable "Found cue data" Pane (Issue #18)
+- Updated [`Core/CueFileParser.cs`](file:///D:/git/CueComplete/Core/CueFileParser.cs):
+  - Added `ParseFormattedText(string text, CueData? template = null)` to extract all 11 metadata fields from formatted key-value text lines (`Artist:`, `Album:`, `Genre:`, `Date:`, `Label:`, `Cat No:`/`Catalog Number:`, `Country:`, `Barcode:`, `Rel Date:`/`Release Date:`, `Discs:`/`Tracks:`, `Comment:`).
+  - Added `ParseDiscsAndTracks` supporting combinations like `1 of 2 Tracks: 8`, `2 Tracks: 12`, `1`, etc., and standalone `Tracks:` keys.
+  - Automatically sanitizes 4-digit year for `Date`.
+  - Preserves template metadata (`DiscId`, `MusicBrainzDiscId`, `DiscogsId`, `Source`, `OriginalLines`, `OriginalEncoding`).
+- Updated [`UI/MainWindow.cs`](file:///D:/git/CueComplete/UI/MainWindow.cs):
+  - Made `_foundDetailsTextView` editable: configured `ReadOnly = false` and `AllowsTab = false` so Tab/Shift+Tab navigates focus between views rather than inserting tabs.
+  - Added public property accessors `FoundDetailsTextView` and `SourceDetailsTextView`.
+  - Added keypress handling in `_foundDetailsTextView`: `Enter` / `Ctrl+Enter` triggers `ApplyFoundCueData()` (preventing newline insertion), and `Esc` calls `ResetFoundCueDataPreview()` to revert to the unedited search result preview.
+  - Added focus guard in `Application.RootKeyEvent` so shortcut keys like 's' (Deep Search) and 'd' (Diff) are not intercepted when the user is typing inside `_foundDetailsTextView`.
+  - Added edit preservation across focus changes: tracks `_lastPreviewedResultIndex` in `UpdateResultPreview(bool force = false)` so switching focus back to `_resultsListView` does not wipe out active edits.
+  - Implemented `ApplyFoundCueData()` to parse `_foundDetailsTextView.Text`, merge edits into `_currentCueData`, enforce disc count validation, save via `CueFileWriter.Save`, and advance to the next file.
+  - Updated `ResultsListView_OpenSelectedItem` and status bar `~Enter~ Apply` to invoke `ApplyFoundCueData()`.
+  - Added `OnDoneMessage` delegate to allow unit test execution with `FakeDriver` without blocking on modal `MessageBox.Query`.
+  - Updated `FormatCueData` to always display the `Comment:` line so users have all fields accessible for editing.
+  - Automatically populates `_foundDetailsTextView` with source file metadata when focused if no search results were found (`"(No results found)"`), enabling manual metadata entry and applying.
+- Added comprehensive unit tests:
+  - [`CueComplete.Tests/CueFileParserTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/CueFileParserTests.cs):
+    - `ParseFormattedText_ValidFullMetadata_ParsesAllFieldsCorrectly`
+    - `ParseFormattedText_DiscsAndTracksFormats_ParsesCorrectly`
+    - `ParseFormattedText_AlternateKeys_ParsesCorrectly`
+    - `ParseFormattedText_EmptyAndWhitespace_HandlesSafely`
+    - `ParseFormattedText_PreservesTemplateMetadata`
+    - `ParseFormattedText_RoundTrip_WithFormatCueData`
+  - [`CueComplete.Tests/MainWindowTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/MainWindowTests.cs):
+    - `MainWindow_FoundCueDataPane_IsEditableAndAllowsTabbing`
+    - `MainWindow_ApplyFoundCueData_SavesEditedDataToFile`
+    - `MainWindow_ResetFoundCueDataPreview_RevertsEdits`
+    - `MainWindow_RootKeyEvent_DoesNotInterceptShortcuts_WhenFoundDetailsHasFocus`
+- Updated documentation in [`README.md`](file:///D:/git/CueComplete/README.md) to document editable Found cue data and the `Esc` shortcut.
+- Verified all 171 unit tests passed via `dotnet test`.
+- Built Release configuration via `dotnet build -c Release` (0 warnings, 0 errors) and packaged win-x64 single-file executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
+
 
 
 
