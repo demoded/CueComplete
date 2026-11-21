@@ -453,6 +453,7 @@
   - Added `MainWindow_CueFilesPane_SelectedFileRendersYellow` verifying that the selected file in `_fileListView` renders with `Color.BrightYellow` foreground when focused and unfocused, while unselected rows retain default coloring.
 - Verified all 174 unit tests passed via `dotnet test`.
 - Built Release configuration via `dotnet build -c Release` (0 warnings, 0 errors) and packaged win-x64 single-file executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
+- Created branch `feat/cue-files-color-tweak` and opened Pull Request [#22](https://github.com/demoded/CueComplete/pull/22).
 
 
 
