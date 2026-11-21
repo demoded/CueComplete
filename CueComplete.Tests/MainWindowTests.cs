@@ -218,6 +218,85 @@ public class MainWindowTests
     }
 
     [Fact]
+    public void MainWindow_Navigation_SourceDetailsCannotFocus_FoundDetailsReceivesFocusAndCursorOnFirstLine()
+    {
+        Application.Init(new FakeDriver());
+        try
+        {
+            var dummyFiles = new List<string> { "file1.cue" };
+            var service = new MetadataService(null, null, null);
+            var window = new MainWindow(dummyFiles, service)
+            {
+                Frame = new Rect(0, 0, 80, 24)
+            };
+            window.LayoutSubviews();
+
+            // Source details must not be focusable
+            Assert.False(window.SourceDetailsTextView.CanFocus);
+            Assert.False(window.SourceCueDetailsPane.CanFocus);
+
+            // Found details must be focusable
+            Assert.True(window.FoundDetailsTextView.CanFocus);
+
+            bool enterFired = false;
+            window.FoundDetailsTextView.Enter += (e) => enterFired = true;
+
+            window.FoundDetailsTextView.Text = "Artist: Megadeth\nAlbum: Rust in Peace\nDate: 1990";
+            window.FoundDetailsTextView.SetFocus();
+
+            Assert.True(enterFired, "Expected Enter event to fire on SetFocus");
+            Assert.True(window.FoundDetailsTextView.HasFocus);
+            Assert.Equal(0, window.FoundDetailsTextView.CursorPosition.Y);
+            Assert.Equal(0, window.FoundDetailsTextView.CurrentRow);
+            Assert.Equal("Artist: Megadeth".Length, window.FoundDetailsTextView.CursorPosition.X);
+            Assert.Equal(0, window.FoundDetailsTextView.TopRow);
+        }
+        finally
+        {
+            Application.Shutdown();
+        }
+    }
+
+    [Fact]
+    public void MainWindow_TabNavigation_FlowsFromCueFilesToSearchResultsToFoundCueData()
+    {
+        Application.Init(new FakeDriver());
+        try
+        {
+            var dummyFiles = new List<string> { "file1.cue" };
+            var service = new MetadataService(null, null, null);
+            var window = new MainWindow(dummyFiles, service)
+            {
+                Frame = new Rect(0, 0, 80, 24)
+            };
+            window.LayoutSubviews();
+
+            // Initial focus should be on FileListView
+            window.FileListView.SetFocus();
+            Assert.True(window.FileListView.HasFocus);
+
+            // Tab -> Search Results
+            window.ProcessKey(new KeyEvent(Key.Tab, new KeyModifiers()));
+            Assert.True(window.ResultsListView.HasFocus);
+
+            // Tab -> skips Source Details -> Found Details
+            window.ProcessKey(new KeyEvent(Key.Tab, new KeyModifiers()));
+            Assert.False(window.SourceDetailsTextView.HasFocus);
+            Assert.True(window.FoundDetailsTextView.HasFocus);
+            Assert.Equal(0, window.FoundDetailsTextView.CursorPosition.Y);
+            Assert.Equal(0, window.FoundDetailsTextView.CurrentRow);
+
+            // Tab -> wraps back to FileListView
+            window.ProcessKey(new KeyEvent(Key.Tab, new KeyModifiers()));
+            Assert.True(window.FileListView.HasFocus);
+        }
+        finally
+        {
+            Application.Shutdown();
+        }
+    }
+
+    [Fact]
     public void MainWindow_ApplyFoundCueData_SavesEditedDataToFile()
     {
         Application.Init(new FakeDriver());

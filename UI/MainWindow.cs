@@ -121,7 +121,8 @@ public class MainWindow : Window
             X = 0,
             Y = Pos.Bottom(_sourcePathLabel),
             Width = Dim.Percent(50),
-            Height = 20
+            Height = 20,
+            CanFocus = false
         };
 
         _sourceDetailsTextView = new TextView()
@@ -131,7 +132,8 @@ public class MainWindow : Window
             Width = Dim.Fill(),
             Height = Dim.Fill(),
             ReadOnly = true,
-            WordWrap = true
+            WordWrap = true,
+            CanFocus = false
         };
         _sourceCueDetailsPane.Add(_sourceDetailsTextView);
 
@@ -172,6 +174,7 @@ public class MainWindow : Window
             {
                 _foundDetailsTextView.Text = FormatCueData(_currentCueData);
             }
+            PositionCursorOnFirstLine();
         };
         _foundCueDataPane.Add(_foundDetailsTextView);
 
@@ -371,12 +374,26 @@ public class MainWindow : Window
             _lastPreviewedResultIndex = _resultsListView.SelectedItem;
             var data = _searchResults[_resultsListView.SelectedItem];
             _foundDetailsTextView.Text = FormatCueData(data);
+            PositionCursorOnFirstLine();
         }
         else
         {
             _lastPreviewedResultIndex = -1;
             _foundDetailsTextView.Text = string.Empty;
         }
+    }
+
+    public void PositionCursorOnFirstLine()
+    {
+        if (_foundDetailsTextView == null) return;
+
+        var text = _foundDetailsTextView.Text?.ToString() ?? string.Empty;
+        int firstLineEnd = text.IndexOfAny(new[] { '\r', '\n' });
+        string firstLine = firstLineEnd >= 0 ? text.Substring(0, firstLineEnd) : text;
+
+        int col = firstLine.Length;
+        _foundDetailsTextView.CursorPosition = new Point(col, 0);
+        _foundDetailsTextView.TopRow = 0;
     }
 
     public void ResetFoundCueDataPreview()

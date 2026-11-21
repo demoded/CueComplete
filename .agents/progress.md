@@ -429,6 +429,19 @@
 - Built Release configuration via `dotnet build -c Release` (0 warnings, 0 errors) and packaged win-x64 single-file executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
 - Created branch `feat/allow-edit-found-cue-data` and opened Pull Request [#21](https://github.com/demoded/CueComplete/pull/21).
 
+### [2026-11-22 06:26] Plan Fix Main Window Navigation and Found Cue Data Focus
+- Created plan in [`.agents/plan 20261122T0626.md`](file:///D:/git/CueComplete/.agents/plan%2020261122T0626.md) to update main window navigation flow by removing focus from "Source cue details" and positioning cursor on the first line when focusing "Found cue data".
+
+### [2026-11-22 06:51] Fix Main Window Navigation and Found Cue Data Focus
+- Updated [`UI/MainWindow.cs`](file:///D:/git/CueComplete/UI/MainWindow.cs):
+  - Set `CanFocus = false` on `_sourceDetailsTextView` and `_sourceCueDetailsPane` to remove cursor and focus stop from "Source cue details". Navigation flow is now directly: `Cue Files` > `Search Results` > `Found cue data`.
+  - Added `PositionCursorOnFirstLine()` which positions the cursor at the first line (`Y = 0`) and sets `TopRow = 0` whenever "Found cue data" receives focus (`Enter` event) or preview text updates.
+- Updated [`CueComplete.Tests/MainWindowTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/MainWindowTests.cs):
+  - Added `MainWindow_Navigation_SourceDetailsCannotFocus_FoundDetailsReceivesFocusAndCursorOnFirstLine` verifying `SourceDetailsTextView.CanFocus` is false, `FoundDetailsTextView.CanFocus` is true, and cursor is positioned at `Y = 0`.
+  - Added `MainWindow_TabNavigation_FlowsFromCueFilesToSearchResultsToFoundCueData` verifying Tab navigation flows from `FileListView` to `ResultsListView` to `FoundDetailsTextView` (skipping `SourceDetailsTextView`) and wraps back.
+- Verified all 173 unit tests passed via `dotnet test`.
+- Built Release configuration via `dotnet build -c Release` (0 warnings, 0 errors) and packaged win-x64 single-file executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
+
 
 
 
