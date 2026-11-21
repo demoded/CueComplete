@@ -297,6 +297,111 @@ public class MainWindowTests
     }
 
     [Fact]
+    public void MainWindow_CueFilesPane_SelectedFileRendersYellow()
+    {
+        Application.Init(new FakeDriver());
+        try
+        {
+            var dummyFiles = new List<string> { "album1.cue", "album2.cue", "album3.cue" };
+            var service = new MetadataService(null, null, null);
+            var window = new MainWindow(dummyFiles, service)
+            {
+                Frame = new Rect(0, 0, 80, 24)
+            };
+            window.LayoutSubviews();
+
+            var rowRenderDelegate = (Action<ListViewRowEventArgs>?)typeof(ListView)
+                .GetField("RowRender", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?
+                .GetValue(window.FileListView);
+            Assert.NotNull(rowRenderDelegate);
+
+            // Row 0 is selected by default
+            window.FileListView.SelectedItem = 0;
+
+            // When FileListView is focused
+            window.FileListView.SetFocus();
+            Assert.True(window.FileListView.HasFocus);
+
+            var row0Args = new ListViewRowEventArgs(0);
+            rowRenderDelegate(row0Args);
+            var row0AttrFocused = row0Args.RowAttribute;
+
+            var row1Args = new ListViewRowEventArgs(1);
+            rowRenderDelegate(row1Args);
+            var row1AttrFocused = row1Args.RowAttribute;
+
+            Assert.NotNull(row0AttrFocused);
+            Assert.Equal(Color.BrightYellow, row0AttrFocused.Value.Foreground);
+            Assert.Null(row1AttrFocused);
+
+            // When FileListView loses focus (e.g. user moved focus to FoundDetailsTextView)
+            window.FoundDetailsTextView.SetFocus();
+            Assert.False(window.FileListView.HasFocus);
+
+            var row0ArgsUnfocused = new ListViewRowEventArgs(0);
+            rowRenderDelegate(row0ArgsUnfocused);
+
+            Assert.NotNull(row0ArgsUnfocused.RowAttribute);
+            Assert.Equal(Color.BrightYellow, row0ArgsUnfocused.RowAttribute.Value.Foreground);
+        }
+        finally
+        {
+            Application.Shutdown();
+        }
+    }
+
+    [Fact]
+    public void MainWindow_SearchResultsPane_SelectedRowRendersYellow()
+    {
+        Application.Init(new FakeDriver());
+        try
+        {
+            var dummyFiles = new List<string> { "album.cue" };
+            var service = new MetadataService(null, null, null);
+            var window = new MainWindow(dummyFiles, service)
+            {
+                Frame = new Rect(0, 0, 80, 24)
+            };
+            window.LayoutSubviews();
+
+            // Populate search results list
+            window.ResultsListView.SetSource(new List<string> { "Result 1", "Result 2" });
+            window.ResultsListView.SelectedItem = 0;
+
+            var rowRenderDelegate = (Action<ListViewRowEventArgs>?)typeof(ListView)
+                .GetField("RowRender", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?
+                .GetValue(window.ResultsListView);
+            Assert.NotNull(rowRenderDelegate);
+
+            // When ResultsListView is focused
+            window.ResultsListView.SetFocus();
+            Assert.True(window.ResultsListView.HasFocus);
+
+            var row0Args = new ListViewRowEventArgs(0);
+            rowRenderDelegate(row0Args);
+            Assert.NotNull(row0Args.RowAttribute);
+            Assert.Equal(Color.BrightYellow, row0Args.RowAttribute.Value.Foreground);
+
+            var row1Args = new ListViewRowEventArgs(1);
+            rowRenderDelegate(row1Args);
+            Assert.Null(row1Args.RowAttribute);
+
+            // When ResultsListView loses focus (e.g. user moved focus to FoundDetailsTextView)
+            window.FoundDetailsTextView.SetFocus();
+            Assert.False(window.ResultsListView.HasFocus);
+
+            var row0ArgsUnfocused = new ListViewRowEventArgs(0);
+            rowRenderDelegate(row0ArgsUnfocused);
+            Assert.NotNull(row0ArgsUnfocused.RowAttribute);
+            Assert.Equal(Color.BrightYellow, row0ArgsUnfocused.RowAttribute.Value.Foreground);
+        }
+        finally
+        {
+            Application.Shutdown();
+        }
+    }
+
+    [Fact]
     public void MainWindow_ApplyFoundCueData_SavesEditedDataToFile()
     {
         Application.Init(new FakeDriver());

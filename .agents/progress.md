@@ -442,6 +442,29 @@
 - Verified all 173 unit tests passed via `dotnet test`.
 - Built Release configuration via `dotnet build -c Release` (0 warnings, 0 errors) and packaged win-x64 single-file executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
 
+### [2026-11-22 07:36] Plan Cue Files Color Tweak (Issue #20)
+- Created plan in [`.agents/plan 20261122T0736.md`](file:///D:/git/CueComplete/.agents/plan%2020261122T0736.md) to render the selected file in the `Cue Files` pane in yellow (`Color.BrightYellow`).
+
+### [2026-11-22 07:40] Implement Cue Files Selected File Color Tweak (Issue #20)
+- Updated [`UI/MainWindow.cs`](file:///D:/git/CueComplete/UI/MainWindow.cs):
+  - Configured `_fileListView.ColorScheme` with custom Focus, HotNormal, and HotFocus attributes using `Color.BrightYellow`.
+  - Added `_fileListView.RowRender` handler to render the selected row (`args.Row == _fileListView.SelectedItem`) with `Color.BrightYellow` foreground across both focused (`bg = Color.DarkGray`) and unfocused (`bg = Color.Blue`) states.
+- Updated [`CueComplete.Tests/MainWindowTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/MainWindowTests.cs):
+  - Added `MainWindow_CueFilesPane_SelectedFileRendersYellow` verifying that the selected file in `_fileListView` renders with `Color.BrightYellow` foreground when focused and unfocused, while unselected rows retain default coloring.
+- Verified all 174 unit tests passed via `dotnet test`.
+- Built Release configuration via `dotnet build -c Release` (0 warnings, 0 errors) and packaged win-x64 single-file executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
+- Created branch `feat/cue-files-color-tweak` and opened Pull Request [#22](https://github.com/demoded/CueComplete/pull/22).
+
+### [2026-11-22 07:46] Apply Selected Row Yellow Color Scheme to Search Results Pane
+- Updated [`UI/MainWindow.cs`](file:///D:/git/CueComplete/UI/MainWindow.cs):
+  - Extracted `ApplyListRowColorScheme(ListView listView)` helper method that configures the custom `ColorScheme` and `RowRender` event handler.
+  - Applied `ApplyListRowColorScheme` to both `_fileListView` (Cue Files pane) and `_resultsListView` (Search Results pane), rendering the selected row in `Color.BrightYellow` foreground across focused (`Color.DarkGray` background) and unfocused (`Color.Blue` background) states.
+- Updated [`CueComplete.Tests/MainWindowTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/MainWindowTests.cs):
+  - Added `MainWindow_SearchResultsPane_SelectedRowRendersYellow` verifying that the selected row in `_resultsListView` renders with `Color.BrightYellow` foreground when focused and unfocused, while unselected rows retain default coloring.
+- Verified all 175 unit tests passed via `dotnet test`.
+- Built Release configuration via `dotnet build -c Release` (0 warnings, 0 errors) and packaged win-x64 single-file executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
+
+
 
 
 
