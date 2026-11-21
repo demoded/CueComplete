@@ -75,6 +75,29 @@ public class MainWindow : Window
             Height = Dim.Fill(),
             AllowsMarking = false
         };
+
+        if (Colors.Base != null)
+        {
+            _fileListView.ColorScheme = new ColorScheme()
+            {
+                Normal = Colors.Base.Normal,
+                Focus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.DarkGray),
+                HotNormal = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Blue),
+                HotFocus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.DarkGray),
+                Disabled = Colors.Base.Disabled
+            };
+        }
+
+        _fileListView.RowRender += (args) =>
+        {
+            if (args.Row == _fileListView.SelectedItem)
+            {
+                var bg = _fileListView.HasFocus
+                    ? (_fileListView.ColorScheme?.Focus.Background ?? Color.DarkGray)
+                    : (_fileListView.ColorScheme?.Normal.Background ?? Color.Blue);
+                args.RowAttribute = new Terminal.Gui.Attribute(Color.BrightYellow, bg);
+            }
+        };
         _fileListView.OpenSelectedItem += FileListView_OpenSelectedItem;
         _fileListView.SelectedItemChanged += (e) => {
             UpdateLeftPaneTitle();
