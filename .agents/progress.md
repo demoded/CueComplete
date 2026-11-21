@@ -475,6 +475,8 @@
   - 10 unit tests covering individual score components, tie-breaking, source tracks matching, deluxe vs standard ranking, and edge cases.
 - Verified all 185 unit tests passed via `dotnet test`.
 - Built Release configuration via `dotnet build -c Release` (0 warnings, 0 errors) and packaged win-x64 single-file executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
+- Created branch `feat/order-search-results-scoring` and opened Pull Request [#23](https://github.com/demoded/CueComplete/pull/23).
+
 
 
 
