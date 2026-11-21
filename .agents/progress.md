@@ -477,6 +477,12 @@
 - Built Release configuration via `dotnet build -c Release` (0 warnings, 0 errors) and packaged win-x64 single-file executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
 - Created branch `feat/order-search-results-scoring` and opened Pull Request [#23](https://github.com/demoded/CueComplete/pull/23).
 
+### [2026-11-22 08:37] Prepare Release v1.5.0
+- Updated `<Version>` in [`CueComplete.csproj`](file:///D:/git/CueComplete/CueComplete.csproj) from `1.4.0` to `1.5.0`.
+- Verified test suite and release build.
+- Tagged release `v1.5.0` to trigger automated GitHub Action release build.
+
+
 
 
 
