@@ -334,26 +334,7 @@ public class MusicBrainzProvider : IMetadataProvider
 
         if (list.Count > 1)
         {
-            var targetCatNo = sourceData.CatalogNumber?.Replace(" ", "").ToLowerInvariant();
-            list = list.OrderByDescending(d =>
-            {
-                int score = 0;
-                if (!string.IsNullOrEmpty(targetCatNo) && !string.IsNullOrWhiteSpace(d.CatalogNumber))
-                {
-                    var cleanCat = d.CatalogNumber.Replace(" ", "").ToLowerInvariant();
-                    if (cleanCat.Contains(targetCatNo) || targetCatNo.Contains(cleanCat))
-                        score += 20;
-                }
-                if (sourceData.Tracks.HasValue && sourceData.Tracks.Value > 0 && d.Tracks == sourceData.Tracks.Value)
-                {
-                    score += 10;
-                }
-                if (StringExtensions.MatchesSourceCountry(d.Country, sourceData))
-                {
-                    score += 15;
-                }
-                return score;
-            }).ToList();
+            list = list.OrderByDescending(d => ReleaseScorer.CalculateScore(d, sourceData)).ToList();
         }
 
         return list;

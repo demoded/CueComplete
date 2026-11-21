@@ -83,22 +83,7 @@ public class MetadataValidationTests
             Tracks = 4
         };
 
-        var targetCatNo = sourceData.CatalogNumber?.Replace(" ", "").ToLowerInvariant();
-        var ordered = list.OrderByDescending(d =>
-        {
-            int score = 0;
-            if (!string.IsNullOrEmpty(targetCatNo) && !string.IsNullOrWhiteSpace(d.CatalogNumber))
-            {
-                var cleanCat = d.CatalogNumber.Replace(" ", "").ToLowerInvariant();
-                if (cleanCat.Contains(targetCatNo) || targetCatNo.Contains(cleanCat))
-                    score += 20;
-            }
-            if (sourceData.Tracks.HasValue && sourceData.Tracks.Value > 0 && d.Tracks == sourceData.Tracks.Value)
-            {
-                score += 10;
-            }
-            return score;
-        }).ToList();
+        var ordered = MetadataService.ScoreAndOrderResults(list, sourceData);
 
         Assert.Equal("RR 2453 2", ordered[0].CatalogNumber);
     }

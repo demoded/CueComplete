@@ -115,7 +115,7 @@ public class MetadataService
 
             if (results.Count > 0)
             {
-                return results;
+                return ScoreAndOrderResults(results, sourceData);
             }
 
             Log("Fast search returned no results. Falling back to deep search.");
@@ -184,6 +184,21 @@ public class MetadataService
             Log("Skipping Discogs search (no credentials found).");
         }
 
-        return results;
+        return ScoreAndOrderResults(results, sourceData);
+    }
+
+    public static List<CueData> ScoreAndOrderResults(List<CueData> results, CueData sourceData)
+    {
+        if (results == null || results.Count == 0 || sourceData == null)
+            return results ?? new List<CueData>();
+
+        foreach (var r in results)
+        {
+            r.Score = ReleaseScorer.CalculateScore(r, sourceData);
+        }
+
+        return results
+            .OrderByDescending(r => r.Score ?? 0)
+            .ToList();
     }
 }

@@ -455,14 +455,29 @@
 - Built Release configuration via `dotnet build -c Release` (0 warnings, 0 errors) and packaged win-x64 single-file executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
 - Created branch `feat/cue-files-color-tweak` and opened Pull Request [#22](https://github.com/demoded/CueComplete/pull/22).
 
-### [2026-11-22 07:46] Apply Selected Row Yellow Color Scheme to Search Results Pane
-- Updated [`UI/MainWindow.cs`](file:///D:/git/CueComplete/UI/MainWindow.cs):
-  - Extracted `ApplyListRowColorScheme(ListView listView)` helper method that configures the custom `ColorScheme` and `RowRender` event handler.
-  - Applied `ApplyListRowColorScheme` to both `_fileListView` (Cue Files pane) and `_resultsListView` (Search Results pane), rendering the selected row in `Color.BrightYellow` foreground across focused (`Color.DarkGray` background) and unfocused (`Color.Blue` background) states.
-- Updated [`CueComplete.Tests/MainWindowTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/MainWindowTests.cs):
-  - Added `MainWindow_SearchResultsPane_SelectedRowRendersYellow` verifying that the selected row in `_resultsListView` renders with `Color.BrightYellow` foreground when focused and unfocused, while unselected rows retain default coloring.
-- Verified all 175 unit tests passed via `dotnet test`.
+### [2026-11-22 08:27] Implement Search Results Scoring and Ordering (Issue #19)
+- Implemented plan [`.agents/plan 20261122T0822.md`](file:///D:/git/CueComplete/.agents/plan%2020261122T0822.md).
+- Added `public int? Score { get; set; }` to [`Core/Models.cs`](file:///D:/git/CueComplete/Core/Models.cs).
+- Created [`Core/ReleaseScorer.cs`](file:///D:/git/CueComplete/Core/ReleaseScorer.cs):
+  - Added weighted scoring for release candidates against the source cue file:
+    - Tracks match: +35 points
+    - Barcode match (normalized): +35 points
+    - Catalog Number match (exact +25, partial +15)
+    - Country match: +15 points
+    - Year match: +10 points
+    - Artist & Album match: +10 points each
+    - Discs / Disc Number match: +5 points each
+- Updated [`Core/MetadataService.cs`](file:///D:/git/CueComplete/Core/MetadataService.cs):
+  - Added `ScoreAndOrderResults(List<CueData> results, CueData sourceData)` helper.
+  - Applied scoring and descending ordering (stable sort) to search results from both fast search and deep search before returning.
+- Updated [`Core/Metadata/MusicBrainzProvider.cs`](file:///D:/git/CueComplete/Core/Metadata/MusicBrainzProvider.cs) to use `ReleaseScorer.CalculateScore`.
+- Updated [`CueComplete.Tests/MetadataValidationTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/MetadataValidationTests.cs) and added [`CueComplete.Tests/ReleaseScorerTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/ReleaseScorerTests.cs):
+  - 10 unit tests covering individual score components, tie-breaking, source tracks matching, deluxe vs standard ranking, and edge cases.
+- Verified all 185 unit tests passed via `dotnet test`.
 - Built Release configuration via `dotnet build -c Release` (0 warnings, 0 errors) and packaged win-x64 single-file executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
+- Created branch `feat/order-search-results-scoring` and opened Pull Request [#23](https://github.com/demoded/CueComplete/pull/23).
+
+
 
 
 
