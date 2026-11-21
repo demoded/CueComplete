@@ -427,6 +427,7 @@
 - Updated documentation in [`README.md`](file:///D:/git/CueComplete/README.md) to document editable Found cue data and the `Esc` shortcut.
 - Verified all 171 unit tests passed via `dotnet test`.
 - Built Release configuration via `dotnet build -c Release` (0 warnings, 0 errors) and packaged win-x64 single-file executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
+- Created branch `feat/allow-edit-found-cue-data` and opened Pull Request [#21](https://github.com/demoded/CueComplete/pull/21).
 
 
 
