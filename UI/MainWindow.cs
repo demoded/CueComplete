@@ -75,29 +75,7 @@ public class MainWindow : Window
             Height = Dim.Fill(),
             AllowsMarking = false
         };
-
-        if (Colors.Base != null)
-        {
-            _fileListView.ColorScheme = new ColorScheme()
-            {
-                Normal = Colors.Base.Normal,
-                Focus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.DarkGray),
-                HotNormal = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Blue),
-                HotFocus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.DarkGray),
-                Disabled = Colors.Base.Disabled
-            };
-        }
-
-        _fileListView.RowRender += (args) =>
-        {
-            if (args.Row == _fileListView.SelectedItem)
-            {
-                var bg = _fileListView.HasFocus
-                    ? (_fileListView.ColorScheme?.Focus.Background ?? Color.DarkGray)
-                    : (_fileListView.ColorScheme?.Normal.Background ?? Color.Blue);
-                args.RowAttribute = new Terminal.Gui.Attribute(Color.BrightYellow, bg);
-            }
-        };
+        ApplyListRowColorScheme(_fileListView);
         _fileListView.OpenSelectedItem += FileListView_OpenSelectedItem;
         _fileListView.SelectedItemChanged += (e) => {
             UpdateLeftPaneTitle();
@@ -126,6 +104,7 @@ public class MainWindow : Window
             Width = Dim.Fill(),
             Height = Dim.Fill()
         };
+        ApplyListRowColorScheme(_resultsListView);
         _resultsListView.OpenSelectedItem += ResultsListView_OpenSelectedItem;
         _resultsListView.SelectedItemChanged += (e) => { if (_resultsListView.HasFocus) UpdateResultPreview(); };
         _resultsListView.Enter += (e) => UpdateResultPreview();
@@ -308,6 +287,32 @@ public class MainWindow : Window
         {
             LoadCueFile(_cueFiles[obj.Item]);
         }
+    }
+
+    private static void ApplyListRowColorScheme(ListView listView)
+    {
+        if (Colors.Base != null)
+        {
+            listView.ColorScheme = new ColorScheme()
+            {
+                Normal = Colors.Base.Normal,
+                Focus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.DarkGray),
+                HotNormal = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Blue),
+                HotFocus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.DarkGray),
+                Disabled = Colors.Base.Disabled
+            };
+        }
+
+        listView.RowRender += (args) =>
+        {
+            if (args.Row == listView.SelectedItem)
+            {
+                var bg = listView.HasFocus
+                    ? (listView.ColorScheme?.Focus.Background ?? Color.DarkGray)
+                    : (listView.ColorScheme?.Normal.Background ?? Color.Blue);
+                args.RowAttribute = new Terminal.Gui.Attribute(Color.BrightYellow, bg);
+            }
+        };
     }
 
     public static string FormatCueData(CueData? data)

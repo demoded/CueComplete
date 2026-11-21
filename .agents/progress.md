@@ -455,6 +455,16 @@
 - Built Release configuration via `dotnet build -c Release` (0 warnings, 0 errors) and packaged win-x64 single-file executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
 - Created branch `feat/cue-files-color-tweak` and opened Pull Request [#22](https://github.com/demoded/CueComplete/pull/22).
 
+### [2026-11-22 07:46] Apply Selected Row Yellow Color Scheme to Search Results Pane
+- Updated [`UI/MainWindow.cs`](file:///D:/git/CueComplete/UI/MainWindow.cs):
+  - Extracted `ApplyListRowColorScheme(ListView listView)` helper method that configures the custom `ColorScheme` and `RowRender` event handler.
+  - Applied `ApplyListRowColorScheme` to both `_fileListView` (Cue Files pane) and `_resultsListView` (Search Results pane), rendering the selected row in `Color.BrightYellow` foreground across focused (`Color.DarkGray` background) and unfocused (`Color.Blue` background) states.
+- Updated [`CueComplete.Tests/MainWindowTests.cs`](file:///D:/git/CueComplete/CueComplete.Tests/MainWindowTests.cs):
+  - Added `MainWindow_SearchResultsPane_SelectedRowRendersYellow` verifying that the selected row in `_resultsListView` renders with `Color.BrightYellow` foreground when focused and unfocused, while unselected rows retain default coloring.
+- Verified all 175 unit tests passed via `dotnet test`.
+- Built Release configuration via `dotnet build -c Release` (0 warnings, 0 errors) and packaged win-x64 single-file executable via `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true`.
+
+
 
 
 
